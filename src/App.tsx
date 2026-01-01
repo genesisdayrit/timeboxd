@@ -1,0 +1,64 @@
+import { useState, useEffect, useCallback } from 'react';
+import { commands } from './lib/commands';
+import type { TimeboxWithSessions } from './lib/types';
+import { TimeboxForm } from './components/TimeboxForm';
+import { TimeboxList } from './components/TimeboxList';
+import { ActiveTimeboxes } from './components/ActiveTimeboxes';
+import { useTimers } from './hooks/useTimers';
+import './App.css';
+
+function App() {
+  const [timeboxes, setTimeboxes] = useState<TimeboxWithSessions[]>([]);
+  const [activeTimeboxes, setActiveTimeboxes] = useState<TimeboxWithSessions[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refreshData = useCallback(async () => {
+    try {
+      const [todayBoxes, active] = await Promise.all([
+        commands.getTodayTimeboxes(),
+        commands.getActiveTimeboxes(),
+      ]);
+      setTimeboxes(todayBoxes);
+      setActiveTimeboxes(active);
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const { getTimer, formatTime } = useTimers(activeTimeboxes, refreshData);
+
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <p className="text-gray-400">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-900 p-6">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-100 mb-6">Lome</h1>
+
+        <TimeboxForm onCreated={refreshData} />
+
+        <ActiveTimeboxes
+          timeboxes={activeTimeboxes}
+          getTimer={getTimer}
+          formatTime={formatTime}
+          onUpdate={refreshData}
+        />
+
+        <TimeboxList timeboxes={timeboxes} onUpdate={refreshData} />
+      </div>
+    </div>
+  );
+}
+
+export default App;
