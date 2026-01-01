@@ -6,7 +6,7 @@ use tauri::{AppHandle, Manager};
 pub fn get_db_path(app_handle: &AppHandle) -> Result<PathBuf, Box<dyn std::error::Error>> {
     let app_dir = app_handle.path().app_data_dir()?;
     fs::create_dir_all(&app_dir)?;
-    Ok(app_dir.join("lome.db"))
+    Ok(app_dir.join("timeboxd.db"))
 }
 
 pub fn initialize_database(app_handle: &AppHandle) -> Result<Connection, Box<dyn std::error::Error>> {

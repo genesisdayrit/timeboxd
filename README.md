@@ -1,4 +1,4 @@
-# Lome - Timebox Tracker
+# timeboxd
 
 A desktop timebox tracking app built with Tauri, React, and TypeScript.
 

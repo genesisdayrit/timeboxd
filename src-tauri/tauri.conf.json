@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Lome",
+  "productName": "timeboxd",
   "version": "0.1.0",
-  "identifier": "com.genesis.lome",
+  "identifier": "com.genesis.timeboxd",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Lome",
+        "title": "timeboxd",
         "width": 800,
         "height": 700
       }
