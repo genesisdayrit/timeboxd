@@ -1,3 +1,6 @@
 {
-  "startCommand": "npm run tauri dev"
+  "scripts": {
+    "run": "npm run tauri dev"
+  },
+  "runScriptMode": "nonconcurrent"
 }
