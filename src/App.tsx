@@ -44,7 +44,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-900 p-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-100 mb-6">Lome</h1>
+        <h1 className="text-3xl font-bold text-gray-100 mb-6">timeboxd</h1>
 
         <TimeboxForm onCreated={refreshData} />
 
