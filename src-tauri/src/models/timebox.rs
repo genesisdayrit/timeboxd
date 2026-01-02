@@ -1,12 +1,54 @@
 use rusqlite::Row;
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum TimeboxStatus {
+    #[serde(rename = "not_started")]
+    NotStarted,
+    #[serde(rename = "in_progress")]
+    InProgress,
+    #[serde(rename = "paused")]
+    Paused,
+    #[serde(rename = "completed")]
+    Completed,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+    #[serde(rename = "stopped")]
+    Stopped,
+}
+
+impl TimeboxStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            TimeboxStatus::NotStarted => "not_started",
+            TimeboxStatus::InProgress => "in_progress",
+            TimeboxStatus::Paused => "paused",
+            TimeboxStatus::Completed => "completed",
+            TimeboxStatus::Cancelled => "cancelled",
+            TimeboxStatus::Stopped => "stopped",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "not_started" => TimeboxStatus::NotStarted,
+            "in_progress" => TimeboxStatus::InProgress,
+            "paused" => TimeboxStatus::Paused,
+            "completed" => TimeboxStatus::Completed,
+            "cancelled" => TimeboxStatus::Cancelled,
+            "stopped" => TimeboxStatus::Stopped,
+            _ => TimeboxStatus::NotStarted,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Timebox {
     pub id: i64,
     pub intention: String,
     pub notes: Option<String>,
     pub intended_duration: i64, // in seconds
+    pub status: TimeboxStatus,
     pub created_at: String,
     pub updated_at: String,
     pub started_at: Option<String>,
@@ -32,18 +74,20 @@ pub struct UpdateTimeboxRequest {
 
 impl Timebox {
     pub fn from_row(row: &Row) -> rusqlite::Result<Self> {
+        let status_str: String = row.get(4)?;
         Ok(Timebox {
             id: row.get(0)?,
             intention: row.get(1)?,
             notes: row.get(2)?,
             intended_duration: row.get(3)?,
-            created_at: row.get(4)?,
-            updated_at: row.get(5)?,
-            started_at: row.get(6)?,
-            completed_at: row.get(7)?,
-            after_time_stopped_at: row.get(8)?,
-            deleted_at: row.get(9)?,
-            canceled_at: row.get(10)?,
+            status: TimeboxStatus::from_str(&status_str),
+            created_at: row.get(5)?,
+            updated_at: row.get(6)?,
+            started_at: row.get(7)?,
+            completed_at: row.get(8)?,
+            after_time_stopped_at: row.get(9)?,
+            deleted_at: row.get(10)?,
+            canceled_at: row.get(11)?,
         })
     }
 }

@@ -1,10 +1,10 @@
-use crate::models::{CreateTimeboxRequest, Session, Timebox, TimeboxChangeLog, UpdateTimeboxRequest};
+use crate::models::{CreateTimeboxRequest, Session, Timebox, TimeboxChangeLog, TimeboxStatus, UpdateTimeboxRequest};
 use crate::state::AppState;
 use chrono::Local;
 use rusqlite::params;
 use tauri::State;
 
-const TIMEBOX_SELECT_COLUMNS: &str = "id, intention, notes, intended_duration, created_at, updated_at, started_at, completed_at, after_time_stopped_at, deleted_at, canceled_at";
+const TIMEBOX_SELECT_COLUMNS: &str = "id, intention, notes, intended_duration, status, created_at, updated_at, started_at, completed_at, after_time_stopped_at, deleted_at, canceled_at";
 
 #[tauri::command]
 pub fn create_timebox(
@@ -109,17 +109,17 @@ pub fn start_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, Str
         )
         .map_err(|e| e.to_string())?;
 
-    // Update timebox - set started_at only if first time
+    // Update timebox - set started_at only if first time, always set status to in_progress
     if started_at.is_none() {
         conn.execute(
-            "UPDATE timeboxes SET started_at = ?1, updated_at = ?1 WHERE id = ?2",
-            params![now, id],
+            "UPDATE timeboxes SET started_at = ?1, status = ?2, updated_at = ?1 WHERE id = ?3",
+            params![now, TimeboxStatus::InProgress.as_str(), id],
         )
         .map_err(|e| e.to_string())?;
     } else {
         conn.execute(
-            "UPDATE timeboxes SET updated_at = ?1 WHERE id = ?2",
-            params![now, id],
+            "UPDATE timeboxes SET status = ?1, updated_at = ?2 WHERE id = ?3",
+            params![TimeboxStatus::InProgress.as_str(), now, id],
         )
         .map_err(|e| e.to_string())?;
     }
@@ -155,10 +155,10 @@ pub fn stop_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, Stri
     )
     .map_err(|e| e.to_string())?;
 
-    // Update timebox - set completed_at
+    // Update timebox - set completed_at and status to completed
     conn.execute(
-        "UPDATE timeboxes SET completed_at = ?1, updated_at = ?1 WHERE id = ?2",
-        params![now, id],
+        "UPDATE timeboxes SET completed_at = ?1, status = ?2, updated_at = ?1 WHERE id = ?3",
+        params![now, TimeboxStatus::Completed.as_str(), id],
     )
     .map_err(|e| e.to_string())?;
 
@@ -186,10 +186,10 @@ pub fn stop_timebox_after_time(state: State<'_, AppState>, id: i64) -> Result<Ti
     )
     .map_err(|e| e.to_string())?;
 
-    // Update timebox - set after_time_stopped_at (timer expired naturally)
+    // Update timebox - set after_time_stopped_at (timer expired naturally) and status to stopped
     conn.execute(
-        "UPDATE timeboxes SET after_time_stopped_at = ?1, updated_at = ?1 WHERE id = ?2",
-        params![now, id],
+        "UPDATE timeboxes SET after_time_stopped_at = ?1, status = ?2, updated_at = ?1 WHERE id = ?3",
+        params![now, TimeboxStatus::Stopped.as_str(), id],
     )
     .map_err(|e| e.to_string())?;
 
@@ -217,10 +217,41 @@ pub fn cancel_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, St
     )
     .map_err(|e| e.to_string())?;
 
-    // Update timebox - set canceled_at
+    // Update timebox - set canceled_at and status to cancelled
     conn.execute(
-        "UPDATE timeboxes SET canceled_at = ?1, updated_at = ?1 WHERE id = ?2",
+        "UPDATE timeboxes SET canceled_at = ?1, status = ?2, updated_at = ?1 WHERE id = ?3",
+        params![now, TimeboxStatus::Cancelled.as_str(), id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Return the updated timebox
+    let mut stmt = conn
+        .prepare(&format!("SELECT {} FROM timeboxes WHERE id = ?1", TIMEBOX_SELECT_COLUMNS))
+        .map_err(|e| e.to_string())?;
+
+    let timebox = stmt
+        .query_row(params![id], Timebox::from_row)
+        .map_err(|e| e.to_string())?;
+
+    Ok(timebox)
+}
+
+#[tauri::command]
+pub fn pause_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    // Close any open sessions for this timebox
+    conn.execute(
+        "UPDATE sessions SET stopped_at = ?1 WHERE timebox_id = ?2 AND stopped_at IS NULL AND cancelled_at IS NULL",
         params![now, id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Update timebox - set status to paused
+    conn.execute(
+        "UPDATE timeboxes SET status = ?1, updated_at = ?2 WHERE id = ?3",
+        params![TimeboxStatus::Paused.as_str(), now, id],
     )
     .map_err(|e| e.to_string())?;
 
