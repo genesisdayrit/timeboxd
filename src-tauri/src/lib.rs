@@ -15,7 +15,7 @@ use commands::{
     unarchive_timebox, update_timebox,
     // Integration commands
     create_integration, delete_integration, get_integration_by_type, get_integrations,
-    test_todoist_connection,
+    test_linear_connection, test_todoist_connection,
 };
 use database::initialize_database;
 use state::AppState;
@@ -56,6 +56,7 @@ pub fn run() {
             get_integrations,
             get_integration_by_type,
             delete_integration,
+            test_linear_connection,
             test_todoist_connection,
         ])
         .run(tauri::generate_context!())

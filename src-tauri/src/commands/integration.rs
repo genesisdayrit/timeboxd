@@ -2,12 +2,46 @@ use crate::models::{CreateIntegrationRequest, Integration};
 use crate::state::AppState;
 use chrono::Local;
 use rusqlite::{params, OptionalExtension};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use tauri::State;
 
 const INTEGRATION_SELECT_COLUMNS: &str = "id, connection_name, integration_type, connection_config, created_at, updated_at";
 
-#[derive(Debug, Serialize)]
+// Linear types
+#[derive(Debug, Deserialize)]
+struct LinearViewerResponse {
+    data: Option<LinearViewerData>,
+    errors: Option<Vec<LinearError>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LinearViewerData {
+    viewer: LinearViewer,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+struct LinearViewer {
+    id: String,
+    name: String,
+    email: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct LinearError {
+    message: String,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct LinearTestResult {
+    pub success: bool,
+    pub user_name: Option<String>,
+    pub user_email: Option<String>,
+    pub error: Option<String>,
+}
+
+// Todoist types
+#[derive(Debug, serde::Serialize)]
 pub struct TodoistTestResult {
     pub success: bool,
     pub user_name: Option<String>,
@@ -17,6 +51,64 @@ pub struct TodoistTestResult {
 #[derive(Debug, Deserialize)]
 struct TodoistUser {
     full_name: String,
+}
+
+#[tauri::command]
+pub fn test_linear_connection(api_key: String) -> Result<LinearTestResult, String> {
+    let client = reqwest::blocking::Client::new();
+
+    let query = r#"{ "query": "{ viewer { id name email } }" }"#;
+
+    let response = client
+        .post("https://api.linear.app/graphql")
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .body(query)
+        .send()
+        .map_err(|e| format!("Failed to connect to Linear: {}", e))?;
+
+    if !response.status().is_success() {
+        return Ok(LinearTestResult {
+            success: false,
+            user_name: None,
+            user_email: None,
+            error: Some(format!("Linear API returned status: {}", response.status())),
+        });
+    }
+
+    let result: LinearViewerResponse = response
+        .json()
+        .map_err(|e| format!("Failed to parse Linear response: {}", e))?;
+
+    if let Some(errors) = result.errors {
+        let error_msg = errors
+            .into_iter()
+            .map(|e| e.message)
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Ok(LinearTestResult {
+            success: false,
+            user_name: None,
+            user_email: None,
+            error: Some(error_msg),
+        });
+    }
+
+    if let Some(data) = result.data {
+        Ok(LinearTestResult {
+            success: true,
+            user_name: Some(data.viewer.name),
+            user_email: Some(data.viewer.email),
+            error: None,
+        })
+    } else {
+        Ok(LinearTestResult {
+            success: false,
+            user_name: None,
+            user_email: None,
+            error: Some("No data returned from Linear".to_string()),
+        })
+    }
 }
 
 #[tauri::command]

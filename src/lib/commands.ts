@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest, Integration, CreateIntegrationRequest, TodoistTestResult } from './types';
+import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest, Integration, CreateIntegrationRequest, LinearTestResult, TodoistTestResult } from './types';
 
 export const commands = {
   createTimebox: (request: CreateTimeboxRequest) =>
@@ -62,6 +62,9 @@ export const commands = {
 
   deleteIntegration: (id: number) =>
     invoke<void>('delete_integration', { id }),
+
+  testLinearConnection: (apiKey: string) =>
+    invoke<LinearTestResult>('test_linear_connection', { apiKey }),
 
   testTodoistConnection: (apiToken: string) =>
     invoke<TodoistTestResult>('test_todoist_connection', { apiToken }),
