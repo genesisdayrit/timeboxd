@@ -7,6 +7,7 @@ use tauri::State;
 
 const INTEGRATION_SELECT_COLUMNS: &str = "id, connection_name, integration_type, connection_config, created_at, updated_at";
 
+// Linear types
 #[derive(Debug, Deserialize)]
 struct LinearViewerResponse {
     data: Option<LinearViewerData>,
@@ -37,6 +38,19 @@ pub struct LinearTestResult {
     pub user_name: Option<String>,
     pub user_email: Option<String>,
     pub error: Option<String>,
+}
+
+// Todoist types
+#[derive(Debug, serde::Serialize)]
+pub struct TodoistTestResult {
+    pub success: bool,
+    pub user_name: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TodoistUser {
+    full_name: String,
 }
 
 #[tauri::command]
@@ -95,6 +109,36 @@ pub fn test_linear_connection(api_key: String) -> Result<LinearTestResult, Strin
             error: Some("No data returned from Linear".to_string()),
         })
     }
+}
+
+#[tauri::command]
+pub fn test_todoist_connection(api_token: String) -> Result<TodoistTestResult, String> {
+    let client = reqwest::blocking::Client::new();
+
+    let response = client
+        .get("https://api.todoist.com/sync/v9/user")
+        .header("Authorization", format!("Bearer {}", api_token))
+        .send()
+        .map_err(|e| format!("Failed to connect to Todoist: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        return Ok(TodoistTestResult {
+            success: false,
+            user_name: None,
+            error: Some(format!("Todoist API returned status: {}", status)),
+        });
+    }
+
+    let user: TodoistUser = response
+        .json()
+        .map_err(|e| format!("Failed to parse Todoist response: {}", e))?;
+
+    Ok(TodoistTestResult {
+        success: true,
+        user_name: Some(user.full_name),
+        error: None,
+    })
 }
 
 #[tauri::command]
