@@ -47,3 +47,31 @@ export interface UpdateTimeboxRequest {
   notes?: string | null;
   intended_duration?: number;
 }
+
+export type IntegrationType = 'linear';
+
+export interface Integration {
+  id: number;
+  connection_name: string;
+  integration_type: IntegrationType;
+  connection_config: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateIntegrationRequest {
+  connection_name: string;
+  integration_type: IntegrationType;
+  connection_config: Record<string, unknown>;
+}
+
+export interface LinearConfig {
+  api_key: string;
+}
+
+export interface LinearTestResult {
+  success: boolean;
+  user_name: string | null;
+  user_email: string | null;
+  error: string | null;
+}
