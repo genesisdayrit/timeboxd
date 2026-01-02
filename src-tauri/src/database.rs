@@ -100,5 +100,14 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
         "#)?;
     }
 
+    // Migration 5: Add finished_at column for explicitly finished timeboxes
+    if version < 5 {
+        conn.execute_batch(r#"
+            ALTER TABLE timeboxes ADD COLUMN finished_at TEXT;
+
+            PRAGMA user_version = 5;
+        "#)?;
+    }
+
     Ok(())
 }

@@ -58,6 +58,7 @@ pub struct Timebox {
     pub canceled_at: Option<String>,
     pub display_order: Option<i64>,
     pub archived_at: Option<String>,
+    pub finished_at: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -92,6 +93,7 @@ impl Timebox {
             canceled_at: row.get(11)?,
             display_order: row.get(12)?,
             archived_at: row.get(13)?,
+            finished_at: row.get(14)?,
         })
     }
 }

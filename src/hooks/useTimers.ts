@@ -14,10 +14,10 @@ export function useTimers(activeTimeboxes: TimeboxWithSessions[], onExpire: () =
   const expiredRef = useRef<Set<number>>(new Set());
 
   const calculateRemainingSeconds = useCallback((timebox: TimeboxWithSessions): number => {
-    const activeSession = timebox.sessions.find(s => s.end_time === null);
+    const activeSession = timebox.sessions.find(s => s.stopped_at === null && s.cancelled_at === null);
     if (!activeSession) return 0;
 
-    const startTime = new Date(activeSession.start_time).getTime();
+    const startTime = new Date(activeSession.started_at).getTime();
     const intendedEndTime = startTime + timebox.intended_duration * 60 * 1000;
     const now = Date.now();
     return Math.floor((intendedEndTime - now) / 1000);
@@ -28,7 +28,7 @@ export function useTimers(activeTimeboxes: TimeboxWithSessions[], onExpire: () =
     const newTimers = new Map<number, TimerState>();
 
     for (const timebox of activeTimeboxes) {
-      const activeSession = timebox.sessions.find(s => s.end_time === null);
+      const activeSession = timebox.sessions.find(s => s.stopped_at === null && s.cancelled_at === null);
       if (activeSession) {
         const remaining = calculateRemainingSeconds(timebox);
         newTimers.set(timebox.id, {
@@ -85,7 +85,7 @@ export function useTimers(activeTimeboxes: TimeboxWithSessions[], onExpire: () =
     const activeSessionIds = new Set(
       activeTimeboxes
         .flatMap(t => t.sessions)
-        .filter(s => s.end_time === null)
+        .filter(s => s.stopped_at === null && s.cancelled_at === null)
         .map(s => s.id)
     );
 

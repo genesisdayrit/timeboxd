@@ -14,6 +14,9 @@ export const commands = {
   stopTimebox: (id: number) =>
     invoke<Timebox>('stop_timebox', { id }),
 
+  finishTimebox: (id: number) =>
+    invoke<Timebox>('finish_timebox', { id }),
+
   cancelTimebox: (id: number) =>
     invoke<Timebox>('cancel_timebox', { id }),
 
