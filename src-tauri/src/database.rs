@@ -109,5 +109,23 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
         "#)?;
     }
 
+    // Migration 6: Add integrations table
+    if version < 6 {
+        conn.execute_batch(r#"
+            CREATE TABLE IF NOT EXISTS integrations (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                connection_name     TEXT NOT NULL,
+                integration_type    TEXT NOT NULL,
+                connection_config   TEXT NOT NULL,
+                created_at          TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                updated_at          TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_integrations_type ON integrations(integration_type);
+
+            PRAGMA user_version = 6;
+        "#)?;
+    }
+
     Ok(())
 }

@@ -13,6 +13,7 @@ use commands::{
     get_sessions_for_timebox, get_timebox_change_log, get_today_timeboxes, pause_timebox,
     reorder_timeboxes, start_timebox, stop_session, stop_timebox, stop_timebox_after_time,
     unarchive_timebox, update_timebox,
+    create_integration, get_integrations, get_integration_by_type, delete_integration, test_linear_connection,
 };
 use database::initialize_database;
 use state::AppState;
@@ -48,6 +49,11 @@ pub fn run() {
             archive_timebox,
             unarchive_timebox,
             get_archived_timeboxes,
+            create_integration,
+            get_integrations,
+            get_integration_by_type,
+            delete_integration,
+            test_linear_connection,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
