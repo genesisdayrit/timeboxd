@@ -27,8 +27,11 @@ const statusLabels: Record<string, string> = {
 };
 
 export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
-  // Editable when not_started or paused
-  const isEditable = timebox.status === 'not_started' || timebox.status === 'paused';
+  // Fully editable when not_started or paused (can edit duration)
+  const isFullyEditable = timebox.status === 'not_started' || timebox.status === 'paused';
+  // Completed timeboxes can edit intention and notes only
+  const isCompletedEditable = timebox.status === 'completed' || timebox.status === 'stopped';
+  const isEditable = isFullyEditable || isCompletedEditable;
 
   // Local state for editable fields
   const [intention, setIntention] = useState(timebox.intention);
@@ -68,7 +71,8 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
         await commands.updateTimebox(timebox.id, {
           intention: intention !== timebox.intention ? intention : undefined,
           notes: notes !== (timebox.notes ?? '') ? (notes || null) : undefined,
-          intended_duration: duration !== timebox.intended_duration ? duration : undefined,
+          // Only update duration for fully editable timeboxes (not_started/paused)
+          intended_duration: isFullyEditable && duration !== timebox.intended_duration ? duration : undefined,
         });
         onUpdate();
       } catch (error) {
@@ -81,7 +85,7 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [isEditable, intention, notes, duration, timebox, onUpdate, hasChanges]);
+  }, [isEditable, isFullyEditable, intention, notes, duration, timebox, onUpdate, hasChanges]);
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -123,8 +127,8 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
     return `${minutes.toFixed(1)} min`;
   };
 
-  // Render editable card for not_started or paused
-  if (isEditable) {
+  // Render fully editable card for not_started or paused
+  if (isFullyEditable) {
     return (
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
         {/* Header with intention and status */}
@@ -215,22 +219,71 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
     );
   }
 
-  // Render read-only card for in_progress, completed, cancelled, stopped
+  // Render card for in_progress, completed, cancelled, stopped
+  // Completed/stopped are editable (intention and notes), in_progress and cancelled are read-only
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 flex items-center justify-between">
-      <div className="flex-1">
-        <div className="flex items-center gap-2 mb-1">
-          <p className="font-medium text-gray-100">{timebox.intention}</p>
+    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2 flex-1">
+          {isCompletedEditable && isEditingIntention ? (
+            <input
+              ref={intentionInputRef}
+              type="text"
+              value={intention}
+              onChange={(e) => setIntention(e.target.value)}
+              onBlur={() => setIsEditingIntention(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setIsEditingIntention(false);
+                }
+              }}
+              className="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          ) : (
+            <p
+              onClick={isCompletedEditable ? () => setIsEditingIntention(true) : undefined}
+              className={`font-medium text-gray-100 ${
+                isCompletedEditable ? 'cursor-pointer hover:bg-gray-700/50 px-2 py-1 -mx-2 rounded' : ''
+              }`}
+            >
+              {intention}
+            </p>
+          )}
           <span
-            className={`text-xs px-2 py-0.5 rounded-full ${
+            className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
               statusColors[timebox.status] || statusColors.not_started
             }`}
           >
             {statusLabels[timebox.status] || timebox.status}
           </span>
         </div>
-        {timebox.notes && (
-          <div className="text-sm text-gray-400 line-clamp-2 mb-1">
+
+        <div className="flex items-center gap-2 ml-4">
+          {(timebox.status === 'completed' || timebox.status === 'cancelled' || timebox.status === 'stopped') && (
+            <button
+              onClick={handleDelete}
+              className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Notes section - editable for completed, read-only for others */}
+      {isCompletedEditable ? (
+        <div className="mb-3">
+          <MarkdownEditor
+            value={notes}
+            onChange={setNotes}
+            placeholder="Add notes..."
+            className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-300 text-sm rounded focus-within:ring-2 focus-within:ring-blue-500"
+            minHeight="60px"
+          />
+        </div>
+      ) : (
+        timebox.notes && (
+          <div className="text-sm text-gray-400 line-clamp-2 mb-2">
             <MarkdownEditor
               value={timebox.notes}
               onChange={() => {}}
@@ -239,28 +292,18 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
               minHeight="auto"
             />
           </div>
-        )}
-        <p className="text-sm text-gray-400">
-          Target: {formatDuration(timebox.intended_duration)} | Actual:{' '}
-          {formatDuration(timebox.actual_duration)}
-        </p>
-        {timebox.sessions.length > 0 && (
-          <p className="text-xs text-gray-500 mt-1">
-            {timebox.sessions.length} session{timebox.sessions.length > 1 ? 's' : ''}
-          </p>
-        )}
-      </div>
+        )
+      )}
 
-      <div className="flex items-center gap-2">
-        {(timebox.status === 'completed' || timebox.status === 'cancelled' || timebox.status === 'stopped') && (
-          <button
-            onClick={handleDelete}
-            className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
-          >
-            Delete
-          </button>
-        )}
-      </div>
+      <p className="text-sm text-gray-400">
+        Target: {formatDuration(timebox.intended_duration)} | Actual:{' '}
+        {formatDuration(timebox.actual_duration)}
+      </p>
+      {timebox.sessions.length > 0 && (
+        <p className="text-xs text-gray-500 mt-1">
+          {timebox.sessions.length} session{timebox.sessions.length > 1 ? 's' : ''}
+        </p>
+      )}
     </div>
   );
 }
