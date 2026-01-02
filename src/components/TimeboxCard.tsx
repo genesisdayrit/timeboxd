@@ -7,10 +7,21 @@ interface TimeboxCardProps {
 }
 
 const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-900/50 text-yellow-300',
-  active: 'bg-green-900/50 text-green-300',
+  not_started: 'bg-yellow-900/50 text-yellow-300',
+  in_progress: 'bg-green-900/50 text-green-300',
+  paused: 'bg-orange-900/50 text-orange-300',
   completed: 'bg-blue-900/50 text-blue-300',
+  stopped: 'bg-purple-900/50 text-purple-300',
   cancelled: 'bg-gray-700 text-gray-400',
+};
+
+const statusLabels: Record<string, string> = {
+  not_started: 'Not Started',
+  in_progress: 'In Progress',
+  paused: 'Paused',
+  completed: 'Completed',
+  stopped: 'Stopped',
+  cancelled: 'Cancelled',
 };
 
 export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
@@ -43,13 +54,13 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
     <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 flex items-center justify-between">
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-1">
-          <p className="font-medium text-gray-100">{timebox.description}</p>
+          <p className="font-medium text-gray-100">{timebox.intention}</p>
           <span
             className={`text-xs px-2 py-0.5 rounded-full ${
-              statusColors[timebox.status] || statusColors.pending
+              statusColors[timebox.status] || statusColors.not_started
             }`}
           >
-            {timebox.status}
+            {statusLabels[timebox.status] || timebox.status}
           </span>
         </div>
         <p className="text-sm text-gray-400">
@@ -64,7 +75,7 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        {timebox.status === 'pending' && (
+        {(timebox.status === 'not_started' || timebox.status === 'paused') && (
           <button
             onClick={handleStart}
             className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
@@ -72,7 +83,7 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
             Start
           </button>
         )}
-        {(timebox.status === 'completed' || timebox.status === 'cancelled') && (
+        {(timebox.status === 'completed' || timebox.status === 'cancelled' || timebox.status === 'stopped') && (
           <button
             onClick={handleDelete}
             className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"

@@ -47,7 +47,7 @@ export function ActiveTimeboxes({
               className="bg-green-900/30 border border-green-700 rounded-lg p-4 flex items-center justify-between"
             >
               <div className="flex-1">
-                <p className="font-medium text-gray-100">{timebox.description}</p>
+                <p className="font-medium text-gray-100">{timebox.intention}</p>
                 <p className="text-sm text-gray-400">
                   {timebox.intended_duration} min target
                 </p>

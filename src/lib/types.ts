@@ -1,10 +1,18 @@
+export type TimeboxStatus = 'not_started' | 'in_progress' | 'paused' | 'completed' | 'cancelled' | 'stopped';
+
 export interface Timebox {
   id: number;
-  description: string;
+  intention: string;
+  notes?: string;
   intended_duration: number;
-  status: 'pending' | 'active' | 'completed' | 'cancelled';
+  status: TimeboxStatus;
   created_at: string;
   updated_at: string;
+  started_at?: string;
+  completed_at?: string;
+  after_time_stopped_at?: string;
+  deleted_at?: string;
+  canceled_at?: string;
 }
 
 export interface Session {
@@ -22,6 +30,7 @@ export interface TimeboxWithSessions extends Timebox {
 }
 
 export interface CreateTimeboxRequest {
-  description: string;
+  intention: string;
   intended_duration: number;
+  notes?: string;
 }
