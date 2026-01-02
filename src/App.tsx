@@ -11,6 +11,7 @@ function App() {
   const [timeboxes, setTimeboxes] = useState<TimeboxWithSessions[]>([]);
   const [activeTimeboxes, setActiveTimeboxes] = useState<TimeboxWithSessions[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const refreshData = useCallback(async () => {
     try {
@@ -44,7 +45,15 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-900 p-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-100 mb-6">timeboxd</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-100">timeboxd</h1>
+          <button
+            onClick={() => setShowCompleted(!showCompleted)}
+            className="px-3 py-1.5 bg-gray-700 text-gray-300 text-sm rounded hover:bg-gray-600 transition-colors"
+          >
+            {showCompleted ? 'Hide Completed' : 'View Completed'}
+          </button>
+        </div>
 
         <TimeboxForm onCreated={refreshData} />
 
@@ -55,7 +64,7 @@ function App() {
           onUpdate={refreshData}
         />
 
-        <TimeboxList timeboxes={timeboxes} onUpdate={refreshData} />
+        <TimeboxList timeboxes={timeboxes} onUpdate={refreshData} showCompleted={showCompleted} />
       </div>
     </div>
   );

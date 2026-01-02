@@ -186,10 +186,10 @@ pub fn stop_timebox_after_time(state: State<'_, AppState>, id: i64) -> Result<Ti
     )
     .map_err(|e| e.to_string())?;
 
-    // Update timebox - set after_time_stopped_at (timer expired naturally) and status to stopped
+    // Update timebox - set after_time_stopped_at (timer expired naturally) and status to completed
     conn.execute(
-        "UPDATE timeboxes SET after_time_stopped_at = ?1, status = ?2, updated_at = ?1 WHERE id = ?3",
-        params![now, TimeboxStatus::Stopped.as_str(), id],
+        "UPDATE timeboxes SET after_time_stopped_at = ?1, completed_at = ?1, status = ?2, updated_at = ?1 WHERE id = ?3",
+        params![now, TimeboxStatus::Completed.as_str(), id],
     )
     .map_err(|e| e.to_string())?;
 
