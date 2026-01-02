@@ -109,7 +109,7 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
         "#)?;
     }
 
-    // Migration 6: Add integrations table
+    // Migration 6: Add integrations table for external service connections
     if version < 6 {
         conn.execute_batch(r#"
             CREATE TABLE IF NOT EXISTS integrations (

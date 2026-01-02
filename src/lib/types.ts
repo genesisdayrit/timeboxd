@@ -48,7 +48,8 @@ export interface UpdateTimeboxRequest {
   intended_duration?: number;
 }
 
-export type IntegrationType = 'linear';
+// Integration types
+export type IntegrationType = 'linear' | 'todoist';
 
 export interface Integration {
   id: number;
@@ -73,6 +74,12 @@ export interface LinearTestResult {
   success: boolean;
   user_name: string | null;
   user_email: string | null;
+  error: string | null;
+}
+
+export interface TodoistTestResult {
+  success: boolean;
+  user_name: string | null;
   error: string | null;
 }
 
