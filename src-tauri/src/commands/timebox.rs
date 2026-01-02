@@ -110,6 +110,7 @@ pub fn start_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, Str
         .map_err(|e| e.to_string())?;
 
     // Update timebox - set started_at only if first time, always set status to in_progress
+    // Also clear completed_at so a stopped timebox can be restarted and appear in active list
     if started_at.is_none() {
         conn.execute(
             "UPDATE timeboxes SET started_at = ?1, status = ?2, updated_at = ?1 WHERE id = ?3",
@@ -118,7 +119,7 @@ pub fn start_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, Str
         .map_err(|e| e.to_string())?;
     } else {
         conn.execute(
-            "UPDATE timeboxes SET status = ?1, updated_at = ?2 WHERE id = ?3",
+            "UPDATE timeboxes SET status = ?1, completed_at = NULL, updated_at = ?2 WHERE id = ?3",
             params![TimeboxStatus::InProgress.as_str(), now, id],
         )
         .map_err(|e| e.to_string())?;

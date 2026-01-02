@@ -54,7 +54,7 @@ function App() {
             onClick={() => setShowCompleted(!showCompleted)}
             className="px-3 py-1.5 bg-gray-700 text-gray-300 text-sm rounded hover:bg-gray-600 transition-colors"
           >
-            {showCompleted ? 'Hide Completed' : 'View Completed'}
+            {showCompleted ? 'Hide Inactive' : 'View Inactive'}
           </button>
         </div>
 
