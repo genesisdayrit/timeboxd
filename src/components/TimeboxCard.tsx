@@ -8,15 +8,16 @@ interface TimeboxCardProps {
   onUpdate: () => void;
   showDragHandle?: boolean;
   isArchived?: boolean;
+  dragHandleProps?: Record<string, unknown>;
 }
 
 const statusColors: Record<string, string> = {
-  not_started: 'bg-yellow-900/50 text-yellow-300',
-  in_progress: 'bg-green-900/50 text-green-300',
-  paused: 'bg-orange-900/50 text-orange-300',
-  completed: 'bg-blue-900/50 text-blue-300',
-  stopped: 'bg-purple-900/50 text-purple-300',
-  cancelled: 'bg-gray-700 text-gray-400',
+  not_started: 'bg-yellow-900/20 text-yellow-400',
+  in_progress: 'bg-indigo-900/20 text-indigo-400',
+  paused: 'bg-orange-900/20 text-orange-400',
+  completed: 'bg-indigo-900/20 text-indigo-300',
+  stopped: 'bg-purple-900/20 text-purple-400',
+  cancelled: 'bg-neutral-800 text-neutral-500',
 };
 
 const statusLabels: Record<string, string> = {
@@ -28,7 +29,7 @@ const statusLabels: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
-export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: TimeboxCardProps) {
+export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dragHandleProps }: TimeboxCardProps) {
   // Fully editable when not_started or paused (can edit duration)
   const isFullyEditable = timebox.status === 'not_started' || timebox.status === 'paused';
   // Completed timeboxes can edit intention and notes only
@@ -150,10 +151,10 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
   // Render archived card (read-only with unarchive option)
   if (isArchived) {
     return (
-      <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 opacity-75">
+      <div className="bg-[#0a0a0a]/50 border border-neutral-800/50 rounded-lg p-4 opacity-75">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 flex-1">
-            <p className="font-medium text-gray-400">{timebox.intention}</p>
+            <p className="font-medium text-neutral-400">{timebox.intention}</p>
             <span
               className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
                 statusColors[timebox.status] || statusColors.not_started
@@ -165,30 +166,30 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
           <div className="flex items-center gap-2 ml-4">
             <button
               onClick={handleUnarchive}
-              className="px-3 py-1.5 bg-gray-600 text-gray-200 text-sm rounded hover:bg-gray-500 transition-colors"
+              className="px-3 py-1.5 bg-neutral-800 text-neutral-200 text-sm rounded hover:bg-neutral-700 transition-colors"
             >
               Unarchive
             </button>
             <button
               onClick={handleDelete}
-              className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+              className="px-3 py-1.5 bg-red-600/70 text-white text-sm rounded hover:bg-red-600 transition-colors"
             >
               Delete
             </button>
           </div>
         </div>
         {timebox.notes && (
-          <div className="text-sm text-gray-500 line-clamp-2 mb-2">
+          <div className="text-sm text-neutral-500 line-clamp-2 mb-2">
             <MarkdownEditor
               value={timebox.notes}
               onChange={() => {}}
               disabled
-              className="text-gray-500 pointer-events-none"
+              className="text-neutral-500 pointer-events-none"
               minHeight="auto"
             />
           </div>
         )}
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-neutral-500">
           Target: {formatDuration(timebox.intended_duration)}
         </p>
       </div>
@@ -198,11 +199,15 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
   // Render fully editable card for not_started or paused
   if (isFullyEditable) {
     return (
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4">
         {/* Header with drag handle, intention and status */}
         <div className="flex items-center gap-2 mb-2">
           {showDragHandle && (
-            <div className="text-gray-500 cursor-grab active:cursor-grabbing select-none" title="Drag to reorder">
+            <div
+              className="text-neutral-500 cursor-grab active:cursor-grabbing select-none touch-none"
+              title="Drag to reorder"
+              {...dragHandleProps}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="16"
@@ -231,12 +236,12 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
                   setIsEditingIntention(false);
                 }
               }}
-              className="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-2 py-1 bg-neutral-900 border border-neutral-800 text-white rounded focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]"
             />
           ) : (
             <p
               onClick={() => setIsEditingIntention(true)}
-              className="flex-1 font-medium text-gray-100 cursor-pointer hover:bg-gray-700/50 px-2 py-1 -mx-2 rounded"
+              className="flex-1 font-medium text-white cursor-pointer hover:bg-neutral-900/50 px-2 py-1 -mx-2 rounded"
             >
               {intention || 'Click to add intention...'}
             </p>
@@ -256,7 +261,7 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
             value={notes}
             onChange={setNotes}
             placeholder="Add notes..."
-            className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-300 text-sm rounded focus-within:ring-2 focus-within:ring-blue-500"
+            className="w-full px-2 py-1 bg-neutral-900 border border-neutral-800 text-neutral-300 text-sm rounded focus-within:ring-2 focus-within:ring-[#5E6AD2]"
             minHeight="60px"
           />
         </div>
@@ -264,11 +269,11 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
         {/* Duration and actions */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-400">Duration:</span>
+            <span className="text-sm text-neutral-400">Duration:</span>
             <button
               onClick={() => handleDurationChange(duration - 5)}
               disabled={duration <= 5}
-              className="w-7 h-7 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+              className="w-7 h-7 bg-neutral-900 text-neutral-300 rounded hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
             >
               -5
             </button>
@@ -283,15 +288,15 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
               }}
               min="1"
               step="1"
-              className="w-16 px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 text-center text-sm rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-16 px-2 py-1 bg-neutral-900 border border-neutral-800 text-white text-center text-sm rounded focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]"
             />
             <button
               onClick={() => handleDurationChange(duration + 5)}
-              className="w-7 h-7 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors text-sm"
+              className="w-7 h-7 bg-neutral-900 text-neutral-300 rounded hover:bg-neutral-800 transition-colors text-sm"
             >
               +5
             </button>
-            <span className="text-sm text-gray-400">min</span>
+            <span className="text-sm text-neutral-400">min</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -299,14 +304,14 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
               <>
                 <button
                   onClick={handleArchive}
-                  className="px-3 py-1.5 bg-gray-600 text-gray-200 text-sm rounded hover:bg-gray-500 transition-colors"
+                  className="px-3 py-1.5 bg-neutral-800 text-neutral-200 text-sm rounded hover:bg-neutral-700 transition-colors"
                   title="Archive this timebox"
                 >
                   Archive
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="px-3 py-1.5 bg-red-600/80 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                  className="px-3 py-1.5 bg-red-600/70 text-white text-sm rounded hover:bg-red-600 transition-colors"
                   title="Delete this timebox"
                 >
                   Delete
@@ -315,7 +320,7 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
             )}
             <button
               onClick={handleStart}
-              className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+              className="px-3 py-1.5 bg-[#4338ca] text-white text-sm rounded hover:bg-[#3730a3] transition-colors"
             >
               Start
             </button>
@@ -328,7 +333,7 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
   // Render card for in_progress, completed, cancelled, stopped
   // Completed/stopped are editable (intention and notes), in_progress and cancelled are read-only
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+    <div className="bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 flex-1">
           {isCompletedEditable && isEditingIntention ? (
@@ -343,13 +348,13 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
                   setIsEditingIntention(false);
                 }
               }}
-              className="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-2 py-1 bg-neutral-900 border border-neutral-800 text-white rounded focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]"
             />
           ) : (
             <p
               onClick={isCompletedEditable ? () => setIsEditingIntention(true) : undefined}
-              className={`font-medium text-gray-100 ${
-                isCompletedEditable ? 'cursor-pointer hover:bg-gray-700/50 px-2 py-1 -mx-2 rounded' : ''
+              className={`font-medium text-white ${
+                isCompletedEditable ? 'cursor-pointer hover:bg-neutral-900/50 px-2 py-1 -mx-2 rounded' : ''
               }`}
             >
               {intention}
@@ -369,13 +374,13 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
             <>
               <button
                 onClick={handleArchive}
-                className="px-3 py-1.5 bg-gray-600 text-gray-200 text-sm rounded hover:bg-gray-500 transition-colors"
+                className="px-3 py-1.5 bg-neutral-800 text-neutral-200 text-sm rounded hover:bg-neutral-700 transition-colors"
               >
                 Archive
               </button>
               <button
                 onClick={handleDelete}
-                className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                className="px-3 py-1.5 bg-red-600/70 text-white text-sm rounded hover:bg-red-600 transition-colors"
               >
                 Delete
               </button>
@@ -391,30 +396,30 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
             value={notes}
             onChange={setNotes}
             placeholder="Add notes..."
-            className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-300 text-sm rounded focus-within:ring-2 focus-within:ring-blue-500"
+            className="w-full px-2 py-1 bg-neutral-900 border border-neutral-800 text-neutral-300 text-sm rounded focus-within:ring-2 focus-within:ring-[#5E6AD2]"
             minHeight="60px"
           />
         </div>
       ) : (
         timebox.notes && (
-          <div className="text-sm text-gray-400 line-clamp-2 mb-2">
+          <div className="text-sm text-neutral-400 line-clamp-2 mb-2">
             <MarkdownEditor
               value={timebox.notes}
               onChange={() => {}}
               disabled
-              className="text-gray-400 pointer-events-none"
+              className="text-neutral-400 pointer-events-none"
               minHeight="auto"
             />
           </div>
         )
       )}
 
-      <p className="text-sm text-gray-400">
+      <p className="text-sm text-neutral-400">
         Target: {formatDuration(timebox.intended_duration)} | Actual:{' '}
         {formatDuration(timebox.actual_duration)}
       </p>
       {timebox.sessions.length > 0 && (
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-neutral-500 mt-1">
           {timebox.sessions.length} session{timebox.sessions.length > 1 ? 's' : ''}
         </p>
       )}

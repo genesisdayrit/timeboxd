@@ -6,10 +6,10 @@ import { TimeboxCard } from './TimeboxCard';
 interface SortableTimeboxCardProps {
   timebox: TimeboxWithSessions;
   onUpdate: () => void;
-  isDragging: boolean;
+  isDragging?: boolean;
 }
 
-export function SortableTimeboxCard({ timebox, onUpdate, isDragging }: SortableTimeboxCardProps) {
+export function SortableTimeboxCard({ timebox, onUpdate }: SortableTimeboxCardProps) {
   const {
     attributes,
     listeners,
@@ -23,12 +23,16 @@ export function SortableTimeboxCard({ timebox, onUpdate, isDragging }: SortableT
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isThisDragging ? 0.5 : 1,
-    cursor: isDragging ? 'grabbing' : 'grab',
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TimeboxCard timebox={timebox} onUpdate={onUpdate} showDragHandle />
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <TimeboxCard
+        timebox={timebox}
+        onUpdate={onUpdate}
+        showDragHandle
+        dragHandleProps={listeners}
+      />
     </div>
   );
 }

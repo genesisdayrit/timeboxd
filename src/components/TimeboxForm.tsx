@@ -71,13 +71,13 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
   const canSubmit = intention.trim() && selectedDuration !== null && !isSubmitting;
 
   return (
-    <div className="bg-gray-800 rounded-lg shadow p-4 mb-6">
+    <div className="bg-[#0a0a0a] rounded-lg shadow p-4 mb-6">
       <input
         type="text"
         value={intention}
         onChange={(e) => setIntention(e.target.value)}
         placeholder="What are you working on?"
-        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-4 py-2 bg-neutral-900 border border-neutral-800 text-white placeholder-neutral-500 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]"
         disabled={isSubmitting}
       />
 
@@ -89,8 +89,8 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
             disabled={isSubmitting}
             className={`px-4 py-2 rounded-lg transition-colors ${
               selectedDuration === duration && !isCustom
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ? 'bg-[#5E6AD2] text-white'
+                : 'bg-neutral-900 text-neutral-300 hover:bg-neutral-800'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {duration} min
@@ -101,7 +101,7 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
           <button
             onClick={() => incrementCustomDuration(-5)}
             disabled={isSubmitting || !isCustom}
-            className="px-2 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-2 py-2 bg-neutral-900 text-neutral-300 rounded-lg hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             -
           </button>
@@ -113,19 +113,19 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
             placeholder="Custom"
             min="1"
             step="5"
-            className={`w-20 px-2 py-2 bg-gray-700 border text-gray-100 placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              isCustom ? 'border-blue-500' : 'border-gray-600'
+            className={`w-20 px-2 py-2 bg-neutral-900 border text-white placeholder-neutral-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5E6AD2] ${
+              isCustom ? 'border-[#5E6AD2]' : 'border-neutral-800'
             }`}
             disabled={isSubmitting}
           />
           <button
             onClick={() => incrementCustomDuration(5)}
             disabled={isSubmitting || !isCustom}
-            className="px-2 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-2 py-2 bg-neutral-900 text-neutral-300 rounded-lg hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             +
           </button>
-          <span className="text-gray-400 text-sm ml-1">min</span>
+          <span className="text-neutral-400 text-sm ml-1">min</span>
         </div>
       </div>
 
@@ -135,7 +135,7 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
           onChange={setNotes}
           placeholder="Notes (optional)"
           disabled={isSubmitting}
-          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500"
+          className="w-full px-4 py-2 bg-neutral-900 border border-neutral-800 text-white rounded-lg focus-within:ring-2 focus-within:ring-[#5E6AD2] focus-within:border-[#5E6AD2]"
           minHeight="100px"
         />
       </div>
@@ -143,7 +143,7 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
       <button
         onClick={handleSubmit}
         disabled={!canSubmit}
-        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+        className="w-full px-4 py-2 bg-[#5E6AD2] text-white rounded-lg hover:bg-[#4f5ab8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
       >
         Add Timebox
       </button>

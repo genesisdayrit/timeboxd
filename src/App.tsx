@@ -39,20 +39,20 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <p className="text-gray-400">Loading...</p>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <p className="text-neutral-500">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6">
+    <div className="min-h-screen bg-black p-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-100">timeboxd</h1>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">timeboxd</h1>
           <button
             onClick={() => setShowCompleted(!showCompleted)}
-            className="px-3 py-1.5 bg-gray-700 text-gray-300 text-sm rounded hover:bg-gray-600 transition-colors"
+            className="px-3 py-1.5 bg-neutral-900 text-neutral-400 text-sm rounded hover:bg-neutral-800 transition-colors"
           >
             {showCompleted ? 'Hide Completed' : 'View Completed'}
           </button>

@@ -83,7 +83,7 @@ function ActiveTimeboxCard({
   }, [isEditingIntention]);
 
   return (
-    <div className="bg-green-900/30 border border-green-700 rounded-lg p-4">
+    <div className="bg-[#5E6AD2]/20 border border-[#5E6AD2] rounded-lg p-4">
       {/* Header row with intention, timer, and actions */}
       <div className="flex items-center justify-between">
         <div className="flex-1 flex items-center gap-2">
@@ -99,12 +99,12 @@ function ActiveTimeboxCard({
                   setIsEditingIntention(false);
                 }
               }}
-              className="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-2 py-1 bg-neutral-900 border border-neutral-800 text-white rounded focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]"
             />
           ) : (
             <p
               onClick={() => setIsEditingIntention(true)}
-              className="font-medium text-gray-100 cursor-pointer hover:bg-gray-700/50 px-2 py-1 -mx-2 rounded"
+              className="font-medium text-white cursor-pointer hover:bg-neutral-900/50 px-2 py-1 -mx-2 rounded"
             >
               {intention}
             </p>
@@ -118,7 +118,7 @@ function ActiveTimeboxCard({
 
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="px-2 py-1.5 text-gray-400 hover:text-gray-200 transition-colors"
+            className="px-2 py-1.5 text-neutral-400 hover:text-neutral-200 transition-colors"
             title={isExpanded ? 'Hide notes' : 'Show notes'}
           >
             <svg
@@ -138,19 +138,19 @@ function ActiveTimeboxCard({
 
           <button
             onClick={onFinish}
-            className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+            className="px-3 py-1.5 bg-[#4338ca] text-white text-sm rounded hover:bg-[#3730a3] transition-colors"
           >
             Finish
           </button>
           <button
             onClick={onStop}
-            className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+            className="px-3 py-1.5 bg-[#e44332] text-white text-sm rounded hover:bg-[#c93c2d] transition-colors"
           >
             Stop
           </button>
           <button
             onClick={onCancel}
-            className="px-3 py-1.5 bg-gray-600 text-white text-sm rounded hover:bg-gray-500 transition-colors"
+            className="px-3 py-1.5 bg-neutral-800 text-white text-sm rounded hover:bg-neutral-700 transition-colors"
           >
             Cancel
           </button>
@@ -158,18 +158,18 @@ function ActiveTimeboxCard({
       </div>
 
       {/* Target duration info */}
-      <p className="text-sm text-gray-400 mt-1">
+      <p className="text-sm text-neutral-400 mt-1">
         {timebox.intended_duration} min target
       </p>
 
       {/* Expandable notes section */}
       {isExpanded && (
-        <div className="mt-3 pt-3 border-t border-green-700/50">
+        <div className="mt-3 pt-3 border-t border-[#5E6AD2]/50">
           <MarkdownEditor
             value={notes}
             onChange={setNotes}
             placeholder="Add notes..."
-            className="w-full px-2 py-1 bg-gray-700/50 border border-gray-600 text-gray-300 text-sm rounded focus-within:ring-2 focus-within:ring-blue-500"
+            className="w-full px-2 py-1 bg-neutral-900/50 border border-neutral-800 text-neutral-300 text-sm rounded focus-within:ring-2 focus-within:ring-[#5E6AD2]"
             minHeight="80px"
           />
         </div>
@@ -215,7 +215,7 @@ export function ActiveTimeboxes({
 
   return (
     <div className="mb-6">
-      <h2 className="text-lg font-semibold text-gray-300 mb-3">Active</h2>
+      <h2 className="text-lg font-semibold text-neutral-300 mb-3">Active</h2>
       <div className="space-y-3">
         {timeboxes.map((timebox) => (
           <ActiveTimeboxCard

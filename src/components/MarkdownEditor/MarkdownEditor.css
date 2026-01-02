@@ -11,7 +11,7 @@
 /* Placeholder styling */
 .tiptap-editor .tiptap p.is-empty::before {
   content: attr(data-placeholder);
-  color: #6b7280;
+  color: #525252;
   pointer-events: none;
   float: left;
   height: 0;
@@ -99,7 +99,7 @@
 
 /* Code styling */
 .tiptap-editor code {
-  background-color: rgba(107, 114, 128, 0.3);
+  background-color: rgba(82, 82, 82, 0.3);
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -107,7 +107,7 @@
 }
 
 .tiptap-editor pre {
-  background-color: rgba(107, 114, 128, 0.2);
+  background-color: rgba(82, 82, 82, 0.2);
   padding: 0.75rem 1rem;
   border-radius: 0.375rem;
   overflow-x: auto;
@@ -121,15 +121,15 @@
 
 /* Blockquote styling */
 .tiptap-editor blockquote {
-  border-left: 3px solid #4b5563;
+  border-left: 3px solid #262626;
   padding-left: 1rem;
   margin: 0.5rem 0;
-  color: #9ca3af;
+  color: #a1a1a1;
 }
 
 /* Horizontal rule */
 .tiptap-editor hr {
   border: none;
-  border-top: 1px solid #4b5563;
+  border-top: 1px solid #262626;
   margin: 1rem 0;
 }
