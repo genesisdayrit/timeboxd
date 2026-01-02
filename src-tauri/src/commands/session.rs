@@ -13,10 +13,10 @@ pub fn get_sessions_for_timebox(
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timebox_id, start_time, end_time, end_reason, created_at
+            "SELECT id, timebox_id, started_at, stopped_at, cancelled_at
              FROM sessions
              WHERE timebox_id = ?1
-             ORDER BY start_time DESC",
+             ORDER BY started_at DESC",
         )
         .map_err(|e| e.to_string())?;
 
@@ -30,34 +30,51 @@ pub fn get_sessions_for_timebox(
 }
 
 #[tauri::command]
-pub fn expire_session(state: State<'_, AppState>, session_id: i64) -> Result<(), String> {
+pub fn stop_session(state: State<'_, AppState>, session_id: i64) -> Result<Session, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
-    // Get the timebox_id for this session
-    let timebox_id: i64 = conn
-        .query_row(
-            "SELECT timebox_id FROM sessions WHERE id = ?1",
-            params![session_id],
-            |row| row.get(0),
-        )
-        .map_err(|e| e.to_string())?;
-
-    // Close the session with auto_expired reason
+    // Stop the session
     conn.execute(
-        "UPDATE sessions SET end_time = ?1, end_reason = 'auto_expired' WHERE id = ?2",
+        "UPDATE sessions SET stopped_at = ?1 WHERE id = ?2 AND stopped_at IS NULL AND cancelled_at IS NULL",
         params![now, session_id],
     )
     .map_err(|e| e.to_string())?;
 
-    // Update the timebox status to completed
+    // Return the updated session
+    let mut stmt = conn
+        .prepare("SELECT id, timebox_id, started_at, stopped_at, cancelled_at FROM sessions WHERE id = ?1")
+        .map_err(|e| e.to_string())?;
+
+    let session = stmt
+        .query_row(params![session_id], Session::from_row)
+        .map_err(|e| e.to_string())?;
+
+    Ok(session)
+}
+
+#[tauri::command]
+pub fn cancel_session(state: State<'_, AppState>, session_id: i64) -> Result<Session, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    // Cancel the session
     conn.execute(
-        "UPDATE timeboxes SET status = 'completed', updated_at = ?1 WHERE id = ?2",
-        params![now, timebox_id],
+        "UPDATE sessions SET cancelled_at = ?1 WHERE id = ?2 AND stopped_at IS NULL AND cancelled_at IS NULL",
+        params![now, session_id],
     )
     .map_err(|e| e.to_string())?;
 
-    Ok(())
+    // Return the updated session
+    let mut stmt = conn
+        .prepare("SELECT id, timebox_id, started_at, stopped_at, cancelled_at FROM sessions WHERE id = ?1")
+        .map_err(|e| e.to_string())?;
+
+    let session = stmt
+        .query_row(params![session_id], Session::from_row)
+        .map_err(|e| e.to_string())?;
+
+    Ok(session)
 }
 
 #[tauri::command]
@@ -69,9 +86,9 @@ pub fn get_active_session_for_timebox(
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timebox_id, start_time, end_time, end_reason, created_at
+            "SELECT id, timebox_id, started_at, stopped_at, cancelled_at
              FROM sessions
-             WHERE timebox_id = ?1 AND end_time IS NULL
+             WHERE timebox_id = ?1 AND stopped_at IS NULL AND cancelled_at IS NULL
              LIMIT 1",
         )
         .map_err(|e| e.to_string())?;

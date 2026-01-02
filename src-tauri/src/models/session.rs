@@ -5,10 +5,9 @@ use serde::{Deserialize, Serialize};
 pub struct Session {
     pub id: i64,
     pub timebox_id: i64,
-    pub start_time: String,
-    pub end_time: Option<String>,
-    pub end_reason: Option<String>,
-    pub created_at: String,
+    pub started_at: String,
+    pub stopped_at: Option<String>,
+    pub cancelled_at: Option<String>,
 }
 
 impl Session {
@@ -16,10 +15,9 @@ impl Session {
         Ok(Session {
             id: row.get(0)?,
             timebox_id: row.get(1)?,
-            start_time: row.get(2)?,
-            end_time: row.get(3)?,
-            end_reason: row.get(4)?,
-            created_at: row.get(5)?,
+            started_at: row.get(2)?,
+            stopped_at: row.get(3)?,
+            cancelled_at: row.get(4)?,
         })
     }
 }
