@@ -24,37 +24,63 @@ pub fn initialize_database(app_handle: &AppHandle) -> Result<Connection, Box<dyn
 fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
     let version: i32 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
 
-    if version < 1 {
+    if version < 2 {
+        // Drop old tables if they exist (fresh start for new schema)
         conn.execute_batch(r#"
-            -- Timeboxes: The planned time blocks with description and intended duration
+            DROP TABLE IF EXISTS sessions;
+            DROP TABLE IF EXISTS timebox_change_log;
+            DROP TABLE IF EXISTS timeboxes;
+        "#)?;
+
+        conn.execute_batch(r#"
+            -- Timeboxes: The planned time blocks
             CREATE TABLE IF NOT EXISTS timeboxes (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                description     TEXT NOT NULL,
-                intended_duration REAL NOT NULL,
-                status          TEXT NOT NULL DEFAULT 'pending',
-                created_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-                updated_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+                id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+                intention               TEXT NOT NULL,
+                notes                   TEXT,
+                intended_duration       INTEGER NOT NULL,
+                created_at              TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                updated_at              TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                started_at              TEXT,
+                completed_at            TEXT,
+                after_time_stopped_at   TEXT,
+                deleted_at              TEXT,
+                canceled_at             TEXT
             );
 
-            -- Sessions: Each time a timebox is started, a session is created
+            -- Sessions: Each time a timebox is started/resumed, a session is created
             CREATE TABLE IF NOT EXISTS sessions (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 timebox_id      INTEGER NOT NULL,
-                start_time      TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-                end_time        TEXT,
-                end_reason      TEXT,
-                created_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                started_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                stopped_at      TEXT,
+                cancelled_at    TEXT,
+                FOREIGN KEY (timebox_id) REFERENCES timeboxes(id) ON DELETE CASCADE
+            );
+
+            -- Timebox change log: Tracks changes to timeboxes
+            CREATE TABLE IF NOT EXISTS timebox_change_log (
+                id                          INTEGER PRIMARY KEY AUTOINCREMENT,
+                timebox_id                  INTEGER NOT NULL,
+                previous_intention_title    TEXT,
+                updated_intention_title     TEXT,
+                previous_note_content       TEXT,
+                updated_note_content        TEXT,
+                previous_intended_duration  INTEGER,
+                new_intended_duration       INTEGER,
+                updated_at                  TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
                 FOREIGN KEY (timebox_id) REFERENCES timeboxes(id) ON DELETE CASCADE
             );
 
             -- Indexes for efficient queries
-            CREATE INDEX IF NOT EXISTS idx_timeboxes_status ON timeboxes(status);
             CREATE INDEX IF NOT EXISTS idx_timeboxes_created_at ON timeboxes(created_at);
+            CREATE INDEX IF NOT EXISTS idx_timeboxes_started_at ON timeboxes(started_at);
+            CREATE INDEX IF NOT EXISTS idx_timeboxes_deleted_at ON timeboxes(deleted_at);
             CREATE INDEX IF NOT EXISTS idx_sessions_timebox_id ON sessions(timebox_id);
-            CREATE INDEX IF NOT EXISTS idx_sessions_start_time ON sessions(start_time);
-            CREATE INDEX IF NOT EXISTS idx_sessions_end_time ON sessions(end_time);
+            CREATE INDEX IF NOT EXISTS idx_sessions_started_at ON sessions(started_at);
+            CREATE INDEX IF NOT EXISTS idx_timebox_change_log_timebox_id ON timebox_change_log(timebox_id);
 
-            PRAGMA user_version = 1;
+            PRAGMA user_version = 2;
         "#)?;
     }
 
