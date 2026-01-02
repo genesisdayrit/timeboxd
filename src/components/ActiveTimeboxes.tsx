@@ -3,6 +3,7 @@ import type { TimeboxWithSessions } from '../lib/types';
 import { commands } from '../lib/commands';
 import { Timer } from './Timer';
 import { MarkdownEditor } from './MarkdownEditor';
+import { CopyButton } from './CopyButton';
 
 interface ActiveTimeboxesProps {
   timeboxes: TimeboxWithSessions[];
@@ -102,12 +103,15 @@ function ActiveTimeboxCard({
               className="flex-1 px-2 py-1 bg-neutral-900 border border-neutral-800 text-white rounded focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]"
             />
           ) : (
-            <p
-              onClick={() => setIsEditingIntention(true)}
-              className="font-medium text-white cursor-pointer hover:bg-neutral-900/50 px-2 py-1 -mx-2 rounded"
-            >
-              {intention}
-            </p>
+            <div className="flex-1 relative group/title">
+              <p
+                onClick={() => setIsEditingIntention(true)}
+                className="font-medium text-white cursor-pointer hover:bg-neutral-900/50 px-2 py-1 -mx-2 rounded pr-6"
+              >
+                {intention}
+              </p>
+              <CopyButton text={intention} className="absolute top-1 right-0 opacity-0 group-hover/title:opacity-100" />
+            </div>
           )}
         </div>
 
@@ -164,7 +168,7 @@ function ActiveTimeboxCard({
 
       {/* Expandable notes section */}
       {isExpanded && (
-        <div className="mt-3 pt-3 border-t border-[#5E6AD2]/50">
+        <div className="mt-3 pt-3 border-t border-[#5E6AD2]/50 relative group/notes">
           <MarkdownEditor
             value={notes}
             onChange={setNotes}
@@ -172,6 +176,12 @@ function ActiveTimeboxCard({
             className="w-full px-2 py-1 bg-neutral-900/50 border border-neutral-800 text-neutral-300 text-sm rounded focus-within:ring-2 focus-within:ring-[#5E6AD2]"
             minHeight="80px"
           />
+          {notes && (
+            <CopyButton
+              text={notes}
+              className="absolute bottom-2 right-2 opacity-0 group-hover/notes:opacity-100"
+            />
+          )}
         </div>
       )}
     </div>
