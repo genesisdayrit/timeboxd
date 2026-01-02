@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest } from './types';
+import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest } from './types';
 
 export const commands = {
   createTimebox: (request: CreateTimeboxRequest) =>
@@ -34,4 +34,16 @@ export const commands = {
 
   getActiveSessionForTimebox: (timeboxId: number) =>
     invoke<Session | null>('get_active_session_for_timebox', { timeboxId }),
+
+  reorderTimeboxes: (orders: ReorderTimeboxRequest[]) =>
+    invoke<void>('reorder_timeboxes', { orders }),
+
+  archiveTimebox: (id: number) =>
+    invoke<Timebox>('archive_timebox', { id }),
+
+  unarchiveTimebox: (id: number) =>
+    invoke<Timebox>('unarchive_timebox', { id }),
+
+  getArchivedTimeboxes: () =>
+    invoke<TimeboxWithSessions[]>('get_archived_timeboxes'),
 };

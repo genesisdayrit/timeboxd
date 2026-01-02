@@ -13,6 +13,13 @@ export interface Timebox {
   after_time_stopped_at?: string;
   deleted_at?: string;
   canceled_at?: string;
+  display_order?: number;
+  archived_at?: string;
+}
+
+export interface ReorderTimeboxRequest {
+  id: number;
+  display_order: number;
 }
 
 export interface Session {

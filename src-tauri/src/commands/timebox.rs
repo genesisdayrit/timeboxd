@@ -4,7 +4,7 @@ use chrono::Local;
 use rusqlite::params;
 use tauri::State;
 
-const TIMEBOX_SELECT_COLUMNS: &str = "id, intention, notes, intended_duration, status, created_at, updated_at, started_at, completed_at, after_time_stopped_at, deleted_at, canceled_at";
+const TIMEBOX_SELECT_COLUMNS: &str = "id, intention, notes, intended_duration, status, created_at, updated_at, started_at, completed_at, after_time_stopped_at, deleted_at, canceled_at, display_order, archived_at";
 
 #[tauri::command]
 pub fn create_timebox(
@@ -309,7 +309,8 @@ pub fn get_today_timeboxes(state: State<'_, AppState>) -> Result<Vec<TimeboxWith
              FROM timeboxes
              WHERE date(created_at) = date('now', 'localtime')
                AND deleted_at IS NULL
-             ORDER BY created_at DESC",
+               AND archived_at IS NULL
+             ORDER BY COALESCE(display_order, 999999), created_at DESC",
             TIMEBOX_SELECT_COLUMNS
         ))
         .map_err(|e| e.to_string())?;
@@ -443,4 +444,132 @@ pub fn get_timebox_change_log(
         .collect();
 
     Ok(logs)
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct ReorderTimeboxRequest {
+    pub id: i64,
+    pub display_order: i64,
+}
+
+#[tauri::command]
+pub fn reorder_timeboxes(
+    state: State<'_, AppState>,
+    orders: Vec<ReorderTimeboxRequest>,
+) -> Result<(), String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    for order in orders {
+        conn.execute(
+            "UPDATE timeboxes SET display_order = ?1, updated_at = ?2 WHERE id = ?3",
+            params![order.display_order, now, order.id],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn archive_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    conn.execute(
+        "UPDATE timeboxes SET archived_at = ?1, updated_at = ?1 WHERE id = ?2",
+        params![now, id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    let mut stmt = conn
+        .prepare(&format!("SELECT {} FROM timeboxes WHERE id = ?1", TIMEBOX_SELECT_COLUMNS))
+        .map_err(|e| e.to_string())?;
+
+    let timebox = stmt
+        .query_row(params![id], Timebox::from_row)
+        .map_err(|e| e.to_string())?;
+
+    Ok(timebox)
+}
+
+#[tauri::command]
+pub fn unarchive_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    conn.execute(
+        "UPDATE timeboxes SET archived_at = NULL, updated_at = ?1 WHERE id = ?2",
+        params![now, id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    let mut stmt = conn
+        .prepare(&format!("SELECT {} FROM timeboxes WHERE id = ?1", TIMEBOX_SELECT_COLUMNS))
+        .map_err(|e| e.to_string())?;
+
+    let timebox = stmt
+        .query_row(params![id], Timebox::from_row)
+        .map_err(|e| e.to_string())?;
+
+    Ok(timebox)
+}
+
+#[tauri::command]
+pub fn get_archived_timeboxes(state: State<'_, AppState>) -> Result<Vec<TimeboxWithSessions>, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+
+    let mut timebox_stmt = conn
+        .prepare(&format!(
+            "SELECT {}
+             FROM timeboxes
+             WHERE date(created_at) = date('now', 'localtime')
+               AND deleted_at IS NULL
+               AND archived_at IS NOT NULL
+             ORDER BY archived_at DESC",
+            TIMEBOX_SELECT_COLUMNS
+        ))
+        .map_err(|e| e.to_string())?;
+
+    let timeboxes: Vec<Timebox> = timebox_stmt
+        .query_map([], Timebox::from_row)
+        .map_err(|e| e.to_string())?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    let mut result = Vec::new();
+
+    for timebox in timeboxes {
+        let mut session_stmt = conn
+            .prepare(
+                "SELECT id, timebox_id, started_at, stopped_at, cancelled_at
+                 FROM sessions
+                 WHERE timebox_id = ?1
+                 ORDER BY started_at DESC",
+            )
+            .map_err(|e| e.to_string())?;
+
+        let sessions: Vec<Session> = session_stmt
+            .query_map(params![timebox.id], Session::from_row)
+            .map_err(|e| e.to_string())?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        let actual_duration: f64 = conn
+            .query_row(
+                "SELECT COALESCE(SUM((julianday(COALESCE(stopped_at, datetime('now', 'localtime'))) - julianday(started_at)) * 86400), 0)
+                 FROM sessions WHERE timebox_id = ?1 AND cancelled_at IS NULL",
+                params![timebox.id],
+                |row| row.get(0),
+            )
+            .map_err(|e| e.to_string())?;
+
+        result.push(TimeboxWithSessions {
+            timebox,
+            sessions,
+            actual_duration,
+        });
+    }
+
+    Ok(result)
 }
