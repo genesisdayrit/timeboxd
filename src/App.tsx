@@ -1,18 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { commands } from './lib/commands';
 import type { TimeboxWithSessions } from './lib/types';
-import { TimeboxForm } from './components/TimeboxForm';
-import { TimeboxList } from './components/TimeboxList';
-import { ActiveTimeboxes } from './components/ActiveTimeboxes';
 import { useTimers } from './hooks/useTimers';
+import { LeftNav, type Page } from './components/LeftNav';
+import { SessionsPage } from './pages/SessionsPage';
+import { IntegrationsPage } from './pages/IntegrationsPage';
 import './App.css';
 
 function App() {
+  const [currentPage, setCurrentPage] = useState<Page>('sessions');
   const [timeboxes, setTimeboxes] = useState<TimeboxWithSessions[]>([]);
   const [archivedTimeboxes, setArchivedTimeboxes] = useState<TimeboxWithSessions[]>([]);
   const [activeTimeboxes, setActiveTimeboxes] = useState<TimeboxWithSessions[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCompleted, setShowCompleted] = useState(false);
 
   const refreshData = useCallback(async () => {
     try {
@@ -46,34 +46,21 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-black p-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">timeboxd</h1>
-          <button
-            onClick={() => setShowCompleted(!showCompleted)}
-            className="px-3 py-1.5 bg-neutral-900 text-neutral-400 text-sm rounded hover:bg-neutral-800 transition-colors"
-          >
-            {showCompleted ? 'Hide Inactive' : 'View Inactive'}
-          </button>
-        </div>
-
-        <TimeboxForm onCreated={refreshData} />
-
-        <ActiveTimeboxes
-          timeboxes={activeTimeboxes}
-          getTimer={getTimer}
-          formatTime={formatTime}
-          onUpdate={refreshData}
-        />
-
-        <TimeboxList
-          timeboxes={timeboxes}
-          archivedTimeboxes={archivedTimeboxes}
-          onUpdate={refreshData}
-          showCompleted={showCompleted}
-        />
-      </div>
+    <div className="min-h-screen bg-black flex">
+      <LeftNav currentPage={currentPage} onNavigate={setCurrentPage} />
+      <main className="flex-1 overflow-auto">
+        {currentPage === 'sessions' && (
+          <SessionsPage
+            timeboxes={timeboxes}
+            archivedTimeboxes={archivedTimeboxes}
+            activeTimeboxes={activeTimeboxes}
+            getTimer={getTimer}
+            formatTime={formatTime}
+            onUpdate={refreshData}
+          />
+        )}
+        {currentPage === 'integrations' && <IntegrationsPage />}
+      </main>
     </div>
   );
 }
