@@ -75,3 +75,37 @@ export interface LinearTestResult {
   user_email: string | null;
   error: string | null;
 }
+
+export interface LinearTeam {
+  id: string;
+  name: string;
+}
+
+export interface LinearApiProject {
+  id: string;
+  name: string;
+  description: string | null;
+  state: string | null;
+}
+
+export interface LinearProject {
+  id: number;
+  linear_project_id: string;
+  linear_team_id: string;
+  name: string;
+  description: string | null;
+  state: string | null;
+  is_active_timebox_project: boolean;
+  created_at: string;
+  updated_at: string;
+  archived_at: string | null;
+  deleted_at: string | null;
+}
+
+export interface SaveLinearProjectRequest {
+  linear_project_id: string;
+  linear_team_id: string;
+  name: string;
+  description?: string;
+  state?: string;
+}

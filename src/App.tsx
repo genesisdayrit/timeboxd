@@ -5,6 +5,7 @@ import { useTimers } from './hooks/useTimers';
 import { LeftNav, type Page } from './components/LeftNav';
 import { SessionsPage } from './pages/SessionsPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
+import { LinearPage } from './pages/LinearPage';
 import './App.css';
 
 function App() {
@@ -13,6 +14,17 @@ function App() {
   const [archivedTimeboxes, setArchivedTimeboxes] = useState<TimeboxWithSessions[]>([]);
   const [activeTimeboxes, setActiveTimeboxes] = useState<TimeboxWithSessions[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLinearConnected, setIsLinearConnected] = useState(false);
+
+  const checkLinearConnection = useCallback(async () => {
+    try {
+      const integration = await commands.getIntegrationByType('linear');
+      setIsLinearConnected(!!integration);
+    } catch (error) {
+      console.error('Failed to check Linear connection:', error);
+      setIsLinearConnected(false);
+    }
+  }, []);
 
   const refreshData = useCallback(async () => {
     try {
@@ -35,7 +47,8 @@ function App() {
 
   useEffect(() => {
     refreshData();
-  }, [refreshData]);
+    checkLinearConnection();
+  }, [refreshData, checkLinearConnection]);
 
   if (loading) {
     return (
@@ -47,7 +60,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-black flex">
-      <LeftNav currentPage={currentPage} onNavigate={setCurrentPage} />
+      <LeftNav currentPage={currentPage} onNavigate={setCurrentPage} isLinearConnected={isLinearConnected} />
       <main className="flex-1 overflow-auto">
         {currentPage === 'sessions' && (
           <SessionsPage
@@ -59,7 +72,8 @@ function App() {
             onUpdate={refreshData}
           />
         )}
-        {currentPage === 'integrations' && <IntegrationsPage />}
+        {currentPage === 'integrations' && <IntegrationsPage onLinearConnectionChange={checkLinearConnection} />}
+        {currentPage === 'linear' && <LinearPage />}
       </main>
     </div>
   );

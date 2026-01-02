@@ -127,5 +127,37 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
         "#)?;
     }
 
+    // Migration 7: Add linear_projects table and timebox linking
+    if version < 7 {
+        conn.execute_batch(r#"
+            -- linear_projects: Store Linear projects fetched from the API
+            CREATE TABLE IF NOT EXISTS linear_projects (
+                id                          INTEGER PRIMARY KEY AUTOINCREMENT,
+                linear_project_id           TEXT NOT NULL UNIQUE,
+                linear_team_id              TEXT NOT NULL,
+                name                        TEXT NOT NULL,
+                description                 TEXT,
+                state                       TEXT,
+                is_active_timebox_project   INTEGER NOT NULL DEFAULT 0,
+                created_at                  TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                updated_at                  TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                archived_at                 TEXT,
+                deleted_at                  TEXT
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_linear_projects_team_id ON linear_projects(linear_team_id);
+            CREATE INDEX IF NOT EXISTS idx_linear_projects_active ON linear_projects(is_active_timebox_project);
+            CREATE INDEX IF NOT EXISTS idx_linear_projects_deleted_at ON linear_projects(deleted_at);
+
+            PRAGMA user_version = 7;
+        "#)?;
+
+        // Add linear_project_id column to timeboxes
+        conn.execute(
+            "ALTER TABLE timeboxes ADD COLUMN linear_project_id INTEGER REFERENCES linear_projects(id) ON DELETE SET NULL",
+            [],
+        )?;
+    }
+
     Ok(())
 }
