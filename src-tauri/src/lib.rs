@@ -10,7 +10,7 @@ use tauri::Manager;
 use commands::{
     cancel_session, cancel_timebox, create_timebox, delete_timebox, get_active_session_for_timebox,
     get_active_timeboxes, get_sessions_for_timebox, get_timebox_change_log, get_today_timeboxes,
-    start_timebox, stop_session, stop_timebox, stop_timebox_after_time, update_timebox,
+    pause_timebox, start_timebox, stop_session, stop_timebox, stop_timebox_after_time, update_timebox,
 };
 use database::initialize_database;
 use state::AppState;
@@ -31,6 +31,7 @@ pub fn run() {
             start_timebox,
             stop_timebox,
             stop_timebox_after_time,
+            pause_timebox,
             cancel_timebox,
             delete_timebox,
             get_today_timeboxes,

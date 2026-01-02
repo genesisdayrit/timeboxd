@@ -24,7 +24,7 @@ pub fn initialize_database(app_handle: &AppHandle) -> Result<Connection, Box<dyn
 fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
     let version: i32 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
 
-    if version < 2 {
+    if version < 3 {
         // Drop old tables if they exist (fresh start for new schema)
         conn.execute_batch(r#"
             DROP TABLE IF EXISTS sessions;
@@ -34,11 +34,13 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
 
         conn.execute_batch(r#"
             -- Timeboxes: The planned time blocks
+            -- status values: 'not_started', 'in_progress', 'paused', 'completed', 'cancelled', 'stopped'
             CREATE TABLE IF NOT EXISTS timeboxes (
                 id                      INTEGER PRIMARY KEY AUTOINCREMENT,
                 intention               TEXT NOT NULL,
                 notes                   TEXT,
                 intended_duration       INTEGER NOT NULL,
+                status                  TEXT NOT NULL DEFAULT 'not_started',
                 created_at              TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
                 updated_at              TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
                 started_at              TEXT,
@@ -76,11 +78,12 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
             CREATE INDEX IF NOT EXISTS idx_timeboxes_created_at ON timeboxes(created_at);
             CREATE INDEX IF NOT EXISTS idx_timeboxes_started_at ON timeboxes(started_at);
             CREATE INDEX IF NOT EXISTS idx_timeboxes_deleted_at ON timeboxes(deleted_at);
+            CREATE INDEX IF NOT EXISTS idx_timeboxes_status ON timeboxes(status);
             CREATE INDEX IF NOT EXISTS idx_sessions_timebox_id ON sessions(timebox_id);
             CREATE INDEX IF NOT EXISTS idx_sessions_started_at ON sessions(started_at);
             CREATE INDEX IF NOT EXISTS idx_timebox_change_log_timebox_id ON timebox_change_log(timebox_id);
 
-            PRAGMA user_version = 2;
+            PRAGMA user_version = 3;
         "#)?;
     }
 
