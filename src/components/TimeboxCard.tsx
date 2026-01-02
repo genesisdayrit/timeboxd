@@ -389,6 +389,14 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
         <div className="flex items-center gap-2 ml-4">
           {(timebox.status === 'completed' || timebox.status === 'cancelled' || timebox.status === 'stopped') && (
             <>
+              {timebox.status === 'stopped' && (
+                <button
+                  onClick={handleStart}
+                  className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                >
+                  Restart
+                </button>
+              )}
               <button
                 onClick={handleArchive}
                 className="px-3 py-1.5 bg-gray-600 text-gray-200 text-sm rounded hover:bg-gray-500 transition-colors"

@@ -17,10 +17,19 @@ export function useTimers(activeTimeboxes: TimeboxWithSessions[], onExpire: () =
     const activeSession = timebox.sessions.find(s => s.stopped_at === null && s.cancelled_at === null);
     if (!activeSession) return 0;
 
-    const startTime = new Date(activeSession.started_at).getTime();
-    const intendedEndTime = startTime + timebox.intended_duration * 60 * 1000;
+    // Calculate time spent in the current active session
+    const sessionStartTime = new Date(activeSession.started_at).getTime();
     const now = Date.now();
-    return Math.floor((intendedEndTime - now) / 1000);
+    const currentSessionSeconds = Math.floor((now - sessionStartTime) / 1000);
+
+    // Total intended duration in seconds
+    const intendedSeconds = timebox.intended_duration * 60;
+
+    // actual_duration already includes time from completed sessions (in seconds)
+    // We need to add the current session's elapsed time to get total elapsed
+    const totalElapsedSeconds = timebox.actual_duration + currentSessionSeconds;
+
+    return Math.floor(intendedSeconds - totalElapsedSeconds);
   }, []);
 
   // Initialize timers when active timeboxes change
