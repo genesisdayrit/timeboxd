@@ -176,12 +176,10 @@ function ActiveTimeboxCard({
             className="w-full px-2 py-1 bg-neutral-900/50 border border-neutral-800 text-neutral-300 text-sm rounded focus-within:ring-2 focus-within:ring-[#5E6AD2]"
             minHeight="80px"
           />
-          {notes && (
-            <CopyButton
-              text={notes}
-              className="absolute bottom-2 right-2 opacity-0 group-hover/notes:opacity-100"
-            />
-          )}
+          <CopyButton
+            text={notes}
+            className="absolute bottom-2 right-2 opacity-0 group-hover/notes:opacity-100"
+          />
         </div>
       )}
     </div>
