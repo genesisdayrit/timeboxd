@@ -15,6 +15,7 @@ export interface Timebox {
   canceled_at?: string;
   display_order?: number;
   archived_at?: string;
+  finished_at?: string;
 }
 
 export interface ReorderTimeboxRequest {
@@ -25,10 +26,9 @@ export interface ReorderTimeboxRequest {
 export interface Session {
   id: number;
   timebox_id: number;
-  start_time: string;
-  end_time: string | null;
-  end_reason: 'completed' | 'manual_stop' | 'auto_expired' | 'cancelled' | null;
-  created_at: string;
+  started_at: string;
+  stopped_at: string | null;
+  cancelled_at: string | null;
 }
 
 export interface TimeboxWithSessions extends Timebox {

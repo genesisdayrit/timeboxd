@@ -4,7 +4,7 @@ use chrono::Local;
 use rusqlite::params;
 use tauri::State;
 
-const TIMEBOX_SELECT_COLUMNS: &str = "id, intention, notes, intended_duration, status, created_at, updated_at, started_at, completed_at, after_time_stopped_at, deleted_at, canceled_at, display_order, archived_at";
+const TIMEBOX_SELECT_COLUMNS: &str = "id, intention, notes, intended_duration, status, created_at, updated_at, started_at, completed_at, after_time_stopped_at, deleted_at, canceled_at, display_order, archived_at, finished_at";
 
 #[tauri::command]
 pub fn create_timebox(
@@ -155,9 +155,40 @@ pub fn stop_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, Stri
     )
     .map_err(|e| e.to_string())?;
 
-    // Update timebox - set completed_at and status to completed
+    // Update timebox - set completed_at and status to stopped (user manually stopped)
     conn.execute(
         "UPDATE timeboxes SET completed_at = ?1, status = ?2, updated_at = ?1 WHERE id = ?3",
+        params![now, TimeboxStatus::Stopped.as_str(), id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Return the updated timebox
+    let mut stmt = conn
+        .prepare(&format!("SELECT {} FROM timeboxes WHERE id = ?1", TIMEBOX_SELECT_COLUMNS))
+        .map_err(|e| e.to_string())?;
+
+    let timebox = stmt
+        .query_row(params![id], Timebox::from_row)
+        .map_err(|e| e.to_string())?;
+
+    Ok(timebox)
+}
+
+#[tauri::command]
+pub fn finish_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    // Close any open sessions for this timebox
+    conn.execute(
+        "UPDATE sessions SET stopped_at = ?1 WHERE timebox_id = ?2 AND stopped_at IS NULL AND cancelled_at IS NULL",
+        params![now, id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Update timebox - set finished_at and status to completed (user explicitly finished)
+    conn.execute(
+        "UPDATE timeboxes SET finished_at = ?1, completed_at = ?1, status = ?2, updated_at = ?1 WHERE id = ?3",
         params![now, TimeboxStatus::Completed.as_str(), id],
     )
     .map_err(|e| e.to_string())?;

@@ -9,7 +9,7 @@ mod database_tests;
 use tauri::Manager;
 use commands::{
     archive_timebox, cancel_session, cancel_timebox, create_timebox, delete_timebox,
-    get_active_session_for_timebox, get_active_timeboxes, get_archived_timeboxes,
+    finish_timebox, get_active_session_for_timebox, get_active_timeboxes, get_archived_timeboxes,
     get_sessions_for_timebox, get_timebox_change_log, get_today_timeboxes, pause_timebox,
     reorder_timeboxes, start_timebox, stop_session, stop_timebox, stop_timebox_after_time,
     unarchive_timebox, update_timebox,
@@ -33,6 +33,7 @@ pub fn run() {
             start_timebox,
             stop_timebox,
             stop_timebox_after_time,
+            finish_timebox,
             pause_timebox,
             cancel_timebox,
             delete_timebox,

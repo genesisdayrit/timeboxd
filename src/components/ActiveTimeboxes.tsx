@@ -16,6 +16,7 @@ interface ActiveTimeboxCardProps {
   timer: { remainingSeconds: number; isExpired: boolean } | undefined;
   formatTime: (seconds: number) => string;
   onStop: () => void;
+  onFinish: () => void;
   onCancel: () => void;
   onUpdate: () => void;
 }
@@ -25,6 +26,7 @@ function ActiveTimeboxCard({
   timer,
   formatTime,
   onStop,
+  onFinish,
   onCancel,
   onUpdate,
 }: ActiveTimeboxCardProps) {
@@ -135,6 +137,12 @@ function ActiveTimeboxCard({
           </button>
 
           <button
+            onClick={onFinish}
+            className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+          >
+            Finish
+          </button>
+          <button
             onClick={onStop}
             className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
           >
@@ -187,6 +195,15 @@ export function ActiveTimeboxes({
     }
   };
 
+  const handleFinish = async (id: number) => {
+    try {
+      await commands.finishTimebox(id);
+      onUpdate();
+    } catch (error) {
+      console.error('Failed to finish timebox:', error);
+    }
+  };
+
   const handleCancel = async (id: number) => {
     try {
       await commands.cancelTimebox(id);
@@ -207,6 +224,7 @@ export function ActiveTimeboxes({
             timer={getTimer(timebox.id)}
             formatTime={formatTime}
             onStop={() => handleStop(timebox.id)}
+            onFinish={() => handleFinish(timebox.id)}
             onCancel={() => handleCancel(timebox.id)}
             onUpdate={onUpdate}
           />
