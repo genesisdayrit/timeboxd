@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest, Integration, CreateIntegrationRequest, LinearTestResult, TodoistTestResult } from './types';
+import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest, Integration, CreateIntegrationRequest, LinearTestResult, TodoistTestResult, LinearTeam, LinearApiProject, LinearProject, SaveLinearProjectRequest } from './types';
 
 export const commands = {
   createTimebox: (request: CreateTimeboxRequest) =>
@@ -68,4 +68,29 @@ export const commands = {
 
   testTodoistConnection: (apiToken: string) =>
     invoke<TodoistTestResult>('test_todoist_connection', { apiToken }),
+
+  // Linear project commands
+  getLinearTeams: (apiKey: string) =>
+    invoke<LinearTeam[]>('get_linear_teams', { apiKey }),
+
+  getLinearTeamProjects: (apiKey: string, teamId: string) =>
+    invoke<LinearApiProject[]>('get_linear_team_projects', { apiKey, teamId }),
+
+  saveLinearProject: (request: SaveLinearProjectRequest) =>
+    invoke<LinearProject>('save_linear_project', { request }),
+
+  toggleLinearProjectActive: (linearProjectId: string, isActive: boolean) =>
+    invoke<void>('toggle_linear_project_active', { linearProjectId, isActive }),
+
+  getLinearProjects: () =>
+    invoke<LinearProject[]>('get_linear_projects'),
+
+  getActiveTimeboxProjects: () =>
+    invoke<LinearProject[]>('get_active_timebox_projects'),
+
+  archiveLinearProject: (linearProjectId: string) =>
+    invoke<void>('archive_linear_project', { linearProjectId }),
+
+  deleteLinearProject: (linearProjectId: string) =>
+    invoke<void>('delete_linear_project', { linearProjectId }),
 };

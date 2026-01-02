@@ -16,6 +16,9 @@ use commands::{
     // Integration commands
     create_integration, delete_integration, get_integration_by_type, get_integrations,
     test_linear_connection, test_todoist_connection,
+    // Linear project commands
+    get_linear_teams, get_linear_team_projects, save_linear_project, toggle_linear_project_active,
+    get_linear_projects, get_active_timebox_projects, archive_linear_project, delete_linear_project,
 };
 use database::initialize_database;
 use state::AppState;
@@ -58,6 +61,15 @@ pub fn run() {
             delete_integration,
             test_linear_connection,
             test_todoist_connection,
+            // Linear project commands
+            get_linear_teams,
+            get_linear_team_projects,
+            save_linear_project,
+            toggle_linear_project_active,
+            get_linear_projects,
+            get_active_timebox_projects,
+            archive_linear_project,
+            delete_linear_project,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

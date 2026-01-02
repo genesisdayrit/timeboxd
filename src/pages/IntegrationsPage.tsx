@@ -6,7 +6,11 @@ import type { Integration } from '../lib/types';
 
 type View = 'list' | 'connect-linear' | 'connect-todoist' | 'success';
 
-export function IntegrationsPage() {
+interface IntegrationsPageProps {
+  onLinearConnectionChange?: () => void;
+}
+
+export function IntegrationsPage({ onLinearConnectionChange }: IntegrationsPageProps) {
   const [view, setView] = useState<View>('list');
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,12 +33,14 @@ export function IntegrationsPage() {
   const handleConnectionSuccess = () => {
     setView('success');
     loadIntegrations();
+    onLinearConnectionChange?.();
   };
 
   const handleDeleteIntegration = async (id: number) => {
     try {
       await commands.deleteIntegration(id);
       loadIntegrations();
+      onLinearConnectionChange?.();
     } catch (error) {
       console.error('Failed to delete integration:', error);
     }
