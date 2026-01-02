@@ -87,7 +87,7 @@ export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showComple
 
   if (pendingTimeboxes.length === 0 && !showCompleted && archivedTimeboxes.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-neutral-500">
         No timeboxes for today yet. Create one above!
       </div>
     );
@@ -97,7 +97,7 @@ export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showComple
     <div className="space-y-6">
       {notStarted.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-300 mb-3">Not Started</h2>
+          <h2 className="text-lg font-semibold text-neutral-300 mb-3">Not Started</h2>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -125,7 +125,7 @@ export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showComple
 
       {paused.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-300 mb-3">Paused</h2>
+          <h2 className="text-lg font-semibold text-neutral-300 mb-3">Paused</h2>
           <div className="space-y-2">
             {paused.map((timebox) => (
               <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} />
@@ -136,7 +136,7 @@ export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showComple
 
       {cancelled.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-300 mb-3">Cancelled</h2>
+          <h2 className="text-lg font-semibold text-neutral-300 mb-3">Cancelled</h2>
           <div className="space-y-2">
             {cancelled.map((timebox) => (
               <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} />
@@ -147,7 +147,7 @@ export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showComple
 
       {showCompleted && stoppedTimeboxes.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-300 mb-3">Stopped</h2>
+          <h2 className="text-lg font-semibold text-neutral-300 mb-3">Stopped</h2>
           <div className="space-y-2">
             {stoppedTimeboxes.map((timebox) => (
               <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} />
@@ -158,7 +158,7 @@ export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showComple
 
       {showCompleted && completedTimeboxes.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-300 mb-3">Completed</h2>
+          <h2 className="text-lg font-semibold text-neutral-300 mb-3">Completed</h2>
           <div className="space-y-2">
             {completedTimeboxes.map((timebox) => (
               <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} />
@@ -169,7 +169,7 @@ export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showComple
 
       {showCompleted && archivedTimeboxes.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-300 mb-3">Archived</h2>
+          <h2 className="text-lg font-semibold text-neutral-300 mb-3">Archived</h2>
           <div className="space-y-2">
             {archivedTimeboxes.map((timebox) => (
               <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} isArchived />
