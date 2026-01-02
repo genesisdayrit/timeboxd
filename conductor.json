@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "run": "npm run tauri dev"
+    "run": "npm install && npx tauri dev"
   },
   "runScriptMode": "nonconcurrent"
 }
