@@ -47,3 +47,27 @@ export interface UpdateTimeboxRequest {
   notes?: string | null;
   intended_duration?: number;
 }
+
+// Integration types
+export type IntegrationType = 'todoist';
+
+export interface Integration {
+  id: number;
+  connection_name: string;
+  integration_type: IntegrationType;
+  connection_config: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateIntegrationRequest {
+  connection_name: string;
+  integration_type: IntegrationType;
+  connection_config: Record<string, unknown>;
+}
+
+export interface TodoistTestResult {
+  success: boolean;
+  user_name: string | null;
+  error: string | null;
+}

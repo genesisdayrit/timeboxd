@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest } from './types';
+import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest, Integration, CreateIntegrationRequest, TodoistTestResult } from './types';
 
 export const commands = {
   createTimebox: (request: CreateTimeboxRequest) =>
@@ -49,4 +49,20 @@ export const commands = {
 
   getArchivedTimeboxes: () =>
     invoke<TimeboxWithSessions[]>('get_archived_timeboxes'),
+
+  // Integration commands
+  createIntegration: (request: CreateIntegrationRequest) =>
+    invoke<Integration>('create_integration', { request }),
+
+  getIntegrations: () =>
+    invoke<Integration[]>('get_integrations'),
+
+  getIntegrationByType: (integrationType: string) =>
+    invoke<Integration | null>('get_integration_by_type', { integrationType }),
+
+  deleteIntegration: (id: number) =>
+    invoke<void>('delete_integration', { id }),
+
+  testTodoistConnection: (apiToken: string) =>
+    invoke<TodoistTestResult>('test_todoist_connection', { apiToken }),
 };
