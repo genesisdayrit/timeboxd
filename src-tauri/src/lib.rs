@@ -8,9 +8,11 @@ mod database_tests;
 
 use tauri::Manager;
 use commands::{
-    cancel_session, cancel_timebox, create_timebox, delete_timebox, get_active_session_for_timebox,
-    get_active_timeboxes, get_sessions_for_timebox, get_timebox_change_log, get_today_timeboxes,
-    pause_timebox, start_timebox, stop_session, stop_timebox, stop_timebox_after_time, update_timebox,
+    archive_timebox, cancel_session, cancel_timebox, create_timebox, delete_timebox,
+    get_active_session_for_timebox, get_active_timeboxes, get_archived_timeboxes,
+    get_sessions_for_timebox, get_timebox_change_log, get_today_timeboxes, pause_timebox,
+    reorder_timeboxes, start_timebox, stop_session, stop_timebox, stop_timebox_after_time,
+    unarchive_timebox, update_timebox,
 };
 use database::initialize_database;
 use state::AppState;
@@ -41,6 +43,10 @@ pub fn run() {
             stop_session,
             cancel_session,
             get_active_session_for_timebox,
+            reorder_timeboxes,
+            archive_timebox,
+            unarchive_timebox,
+            get_archived_timeboxes,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

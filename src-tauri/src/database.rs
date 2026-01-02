@@ -87,5 +87,18 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
         "#)?;
     }
 
+    // Migration 4: Add display_order and archived_at columns
+    if version < 4 {
+        conn.execute_batch(r#"
+            ALTER TABLE timeboxes ADD COLUMN display_order INTEGER;
+            ALTER TABLE timeboxes ADD COLUMN archived_at TEXT;
+
+            CREATE INDEX IF NOT EXISTS idx_timeboxes_display_order ON timeboxes(display_order);
+            CREATE INDEX IF NOT EXISTS idx_timeboxes_archived_at ON timeboxes(archived_at);
+
+            PRAGMA user_version = 4;
+        "#)?;
+    }
+
     Ok(())
 }

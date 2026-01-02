@@ -6,6 +6,8 @@ import { MarkdownEditor } from './MarkdownEditor';
 interface TimeboxCardProps {
   timebox: TimeboxWithSessions;
   onUpdate: () => void;
+  showDragHandle?: boolean;
+  isArchived?: boolean;
 }
 
 const statusColors: Record<string, string> = {
@@ -26,7 +28,7 @@ const statusLabels: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
-export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
+export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: TimeboxCardProps) {
   // Fully editable when not_started or paused (can edit duration)
   const isFullyEditable = timebox.status === 'not_started' || timebox.status === 'paused';
   // Completed timeboxes can edit intention and notes only
@@ -60,7 +62,7 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
 
   // Autosave effect with 300ms debounce
   useEffect(() => {
-    if (!isEditable || !hasChanges) return;
+    if (!isEditable || !hasChanges || isArchived) return;
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -85,7 +87,7 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [isEditable, isFullyEditable, intention, notes, duration, timebox, onUpdate, hasChanges]);
+  }, [isEditable, isFullyEditable, isArchived, intention, notes, duration, timebox, onUpdate, hasChanges]);
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -114,6 +116,24 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
     }
   };
 
+  const handleArchive = async () => {
+    try {
+      await commands.archiveTimebox(timebox.id);
+      onUpdate();
+    } catch (error) {
+      console.error('Failed to archive timebox:', error);
+    }
+  };
+
+  const handleUnarchive = async () => {
+    try {
+      await commands.unarchiveTimebox(timebox.id);
+      onUpdate();
+    } catch (error) {
+      console.error('Failed to unarchive timebox:', error);
+    }
+  };
+
   const handleDurationChange = (newDuration: number) => {
     if (newDuration >= 1) {
       setDuration(newDuration);
@@ -127,12 +147,78 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
     return `${minutes.toFixed(1)} min`;
   };
 
+  // Render archived card (read-only with unarchive option)
+  if (isArchived) {
+    return (
+      <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 opacity-75">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 flex-1">
+            <p className="font-medium text-gray-400">{timebox.intention}</p>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
+                statusColors[timebox.status] || statusColors.not_started
+              }`}
+            >
+              {statusLabels[timebox.status] || timebox.status}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 ml-4">
+            <button
+              onClick={handleUnarchive}
+              className="px-3 py-1.5 bg-gray-600 text-gray-200 text-sm rounded hover:bg-gray-500 transition-colors"
+            >
+              Unarchive
+            </button>
+            <button
+              onClick={handleDelete}
+              className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+        {timebox.notes && (
+          <div className="text-sm text-gray-500 line-clamp-2 mb-2">
+            <MarkdownEditor
+              value={timebox.notes}
+              onChange={() => {}}
+              disabled
+              className="text-gray-500 pointer-events-none"
+              minHeight="auto"
+            />
+          </div>
+        )}
+        <p className="text-sm text-gray-500">
+          Target: {formatDuration(timebox.intended_duration)}
+        </p>
+      </div>
+    );
+  }
+
   // Render fully editable card for not_started or paused
   if (isFullyEditable) {
     return (
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-        {/* Header with intention and status */}
+        {/* Header with drag handle, intention and status */}
         <div className="flex items-center gap-2 mb-2">
+          {showDragHandle && (
+            <div className="text-gray-500 cursor-grab active:cursor-grabbing select-none" title="Drag to reorder">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <circle cx="9" cy="6" r="2" />
+                <circle cx="15" cy="6" r="2" />
+                <circle cx="9" cy="12" r="2" />
+                <circle cx="15" cy="12" r="2" />
+                <circle cx="9" cy="18" r="2" />
+                <circle cx="15" cy="18" r="2" />
+              </svg>
+            </div>
+          )}
           {isEditingIntention ? (
             <input
               ref={intentionInputRef}
@@ -208,12 +294,32 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
             <span className="text-sm text-gray-400">min</span>
           </div>
 
-          <button
-            onClick={handleStart}
-            className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-          >
-            Start
-          </button>
+          <div className="flex items-center gap-2">
+            {timebox.status === 'not_started' && (
+              <>
+                <button
+                  onClick={handleArchive}
+                  className="px-3 py-1.5 bg-gray-600 text-gray-200 text-sm rounded hover:bg-gray-500 transition-colors"
+                  title="Archive this timebox"
+                >
+                  Archive
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="px-3 py-1.5 bg-red-600/80 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                  title="Delete this timebox"
+                >
+                  Delete
+                </button>
+              </>
+            )}
+            <button
+              onClick={handleStart}
+              className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+            >
+              Start
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -260,12 +366,20 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
 
         <div className="flex items-center gap-2 ml-4">
           {(timebox.status === 'completed' || timebox.status === 'cancelled' || timebox.status === 'stopped') && (
-            <button
-              onClick={handleDelete}
-              className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
-            >
-              Delete
-            </button>
+            <>
+              <button
+                onClick={handleArchive}
+                className="px-3 py-1.5 bg-gray-600 text-gray-200 text-sm rounded hover:bg-gray-500 transition-colors"
+              >
+                Archive
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </>
           )}
         </div>
       </div>

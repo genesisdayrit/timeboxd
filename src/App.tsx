@@ -9,18 +9,21 @@ import './App.css';
 
 function App() {
   const [timeboxes, setTimeboxes] = useState<TimeboxWithSessions[]>([]);
+  const [archivedTimeboxes, setArchivedTimeboxes] = useState<TimeboxWithSessions[]>([]);
   const [activeTimeboxes, setActiveTimeboxes] = useState<TimeboxWithSessions[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCompleted, setShowCompleted] = useState(false);
 
   const refreshData = useCallback(async () => {
     try {
-      const [todayBoxes, active] = await Promise.all([
+      const [todayBoxes, active, archived] = await Promise.all([
         commands.getTodayTimeboxes(),
         commands.getActiveTimeboxes(),
+        commands.getArchivedTimeboxes(),
       ]);
       setTimeboxes(todayBoxes);
       setActiveTimeboxes(active);
+      setArchivedTimeboxes(archived);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
@@ -64,7 +67,12 @@ function App() {
           onUpdate={refreshData}
         />
 
-        <TimeboxList timeboxes={timeboxes} onUpdate={refreshData} showCompleted={showCompleted} />
+        <TimeboxList
+          timeboxes={timeboxes}
+          archivedTimeboxes={archivedTimeboxes}
+          onUpdate={refreshData}
+          showCompleted={showCompleted}
+        />
       </div>
     </div>
   );
