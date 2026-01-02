@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { TimeboxWithSessions } from '../lib/types';
 import { commands } from '../lib/commands';
 import { MarkdownEditor } from './MarkdownEditor';
+import { CopyButton } from './CopyButton';
 
 interface TimeboxCardProps {
   timebox: TimeboxWithSessions;
@@ -153,7 +154,10 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
       <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 opacity-75">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 flex-1">
-            <p className="font-medium text-gray-400">{timebox.intention}</p>
+            <div className="relative group/title flex-1">
+              <p className="font-medium text-gray-400 pr-6">{timebox.intention}</p>
+              <CopyButton text={timebox.intention} className="absolute top-0 right-0 opacity-0 group-hover/title:opacity-100" />
+            </div>
             <span
               className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
                 statusColors[timebox.status] || statusColors.not_started
@@ -178,13 +182,17 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
           </div>
         </div>
         {timebox.notes && (
-          <div className="text-sm text-gray-500 line-clamp-2 mb-2">
+          <div className="text-sm text-gray-500 line-clamp-2 mb-2 relative group/notes">
             <MarkdownEditor
               value={timebox.notes}
               onChange={() => {}}
               disabled
               className="text-gray-500 pointer-events-none"
               minHeight="auto"
+            />
+            <CopyButton
+              text={timebox.notes}
+              className="absolute bottom-1 right-1 opacity-0 group-hover/notes:opacity-100"
             />
           </div>
         )}
@@ -234,12 +242,17 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
               className="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           ) : (
-            <p
-              onClick={() => setIsEditingIntention(true)}
-              className="flex-1 font-medium text-gray-100 cursor-pointer hover:bg-gray-700/50 px-2 py-1 -mx-2 rounded"
-            >
-              {intention || 'Click to add intention...'}
-            </p>
+            <div className="flex-1 relative group/title">
+              <p
+                onClick={() => setIsEditingIntention(true)}
+                className="font-medium text-gray-100 cursor-pointer hover:bg-gray-700/50 px-2 py-1 -mx-2 rounded pr-6"
+              >
+                {intention || 'Click to add intention...'}
+              </p>
+              {intention && (
+                <CopyButton text={intention} className="absolute top-1 right-0 opacity-0 group-hover/title:opacity-100" />
+              )}
+            </div>
           )}
           <span
             className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
@@ -251,7 +264,7 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
         </div>
 
         {/* Notes section */}
-        <div className="mb-3">
+        <div className="mb-3 relative group/notes">
           <MarkdownEditor
             value={notes}
             onChange={setNotes}
@@ -259,6 +272,12 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
             className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-300 text-sm rounded focus-within:ring-2 focus-within:ring-blue-500"
             minHeight="60px"
           />
+          {notes && (
+            <CopyButton
+              text={notes}
+              className="absolute bottom-2 right-2 opacity-0 group-hover/notes:opacity-100"
+            />
+          )}
         </div>
 
         {/* Duration and actions */}
@@ -346,14 +365,17 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
               className="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           ) : (
-            <p
-              onClick={isCompletedEditable ? () => setIsEditingIntention(true) : undefined}
-              className={`font-medium text-gray-100 ${
-                isCompletedEditable ? 'cursor-pointer hover:bg-gray-700/50 px-2 py-1 -mx-2 rounded' : ''
-              }`}
-            >
-              {intention}
-            </p>
+            <div className="flex-1 relative group/title">
+              <p
+                onClick={isCompletedEditable ? () => setIsEditingIntention(true) : undefined}
+                className={`font-medium text-gray-100 pr-6 ${
+                  isCompletedEditable ? 'cursor-pointer hover:bg-gray-700/50 px-2 py-1 -mx-2 rounded' : ''
+                }`}
+              >
+                {intention}
+              </p>
+              <CopyButton text={intention} className="absolute top-0 right-0 opacity-0 group-hover/title:opacity-100" />
+            </div>
           )}
           <span
             className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
@@ -386,7 +408,7 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
 
       {/* Notes section - editable for completed, read-only for others */}
       {isCompletedEditable ? (
-        <div className="mb-3">
+        <div className="mb-3 relative group/notes">
           <MarkdownEditor
             value={notes}
             onChange={setNotes}
@@ -394,16 +416,26 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived }: T
             className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-300 text-sm rounded focus-within:ring-2 focus-within:ring-blue-500"
             minHeight="60px"
           />
+          {notes && (
+            <CopyButton
+              text={notes}
+              className="absolute bottom-2 right-2 opacity-0 group-hover/notes:opacity-100"
+            />
+          )}
         </div>
       ) : (
         timebox.notes && (
-          <div className="text-sm text-gray-400 line-clamp-2 mb-2">
+          <div className="text-sm text-gray-400 line-clamp-2 mb-2 relative group/notes">
             <MarkdownEditor
               value={timebox.notes}
               onChange={() => {}}
               disabled
               className="text-gray-400 pointer-events-none"
               minHeight="auto"
+            />
+            <CopyButton
+              text={timebox.notes}
+              className="absolute bottom-1 right-1 opacity-0 group-hover/notes:opacity-100"
             />
           </div>
         )
