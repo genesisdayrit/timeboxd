@@ -1,9 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest } from './types';
+import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest } from './types';
 
 export const commands = {
   createTimebox: (request: CreateTimeboxRequest) =>
     invoke<Timebox>('create_timebox', { request }),
+
+  updateTimebox: (id: number, request: UpdateTimeboxRequest) =>
+    invoke<Timebox>('update_timebox', { id, request }),
 
   startTimebox: (id: number) =>
     invoke<Timebox>('start_timebox', { id }),

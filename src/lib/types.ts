@@ -3,7 +3,7 @@ export type TimeboxStatus = 'not_started' | 'in_progress' | 'paused' | 'complete
 export interface Timebox {
   id: number;
   intention: string;
-  notes?: string;
+  notes: string | null;
   intended_duration: number;
   status: TimeboxStatus;
   created_at: string;
@@ -33,4 +33,10 @@ export interface CreateTimeboxRequest {
   intention: string;
   intended_duration: number;
   notes?: string;
+}
+
+export interface UpdateTimeboxRequest {
+  intention?: string;
+  notes?: string | null;
+  intended_duration?: number;
 }
