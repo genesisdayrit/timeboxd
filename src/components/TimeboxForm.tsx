@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
-import Markdown from 'react-markdown';
+import { useState } from 'react';
 import { commands } from '../lib/commands';
+import { MarkdownEditor } from './MarkdownEditor';
 
 interface TimeboxFormProps {
   onCreated: () => void;
@@ -15,8 +15,6 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
   const [customDuration, setCustomDuration] = useState('');
   const [isCustom, setIsCustom] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isNotesEditing, setIsNotesEditing] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handlePresetClick = (duration: number) => {
     setSelectedDuration(duration);
@@ -68,15 +66,6 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleNotesClick = () => {
-    setIsNotesEditing(true);
-    setTimeout(() => textareaRef.current?.focus(), 0);
-  };
-
-  const handleNotesBlur = () => {
-    setIsNotesEditing(false);
   };
 
   const canSubmit = intention.trim() && selectedDuration !== null && !isSubmitting;
@@ -141,31 +130,14 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
       </div>
 
       <div className="mb-4">
-        {isNotesEditing ? (
-          <textarea
-            ref={textareaRef}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            onBlur={handleNotesBlur}
-            placeholder="Notes (optional, supports markdown)"
-            rows={4}
-            className="w-full px-4 py-2 bg-gray-700 border border-blue-500 text-gray-100 placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y font-mono text-sm"
-            disabled={isSubmitting}
-          />
-        ) : (
-          <div
-            onClick={handleNotesClick}
-            className="w-full min-h-[100px] px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg cursor-text hover:border-gray-500 transition-colors"
-          >
-            {notes ? (
-              <div className="prose prose-invert prose-sm max-w-none">
-                <Markdown>{notes}</Markdown>
-              </div>
-            ) : (
-              <span className="text-gray-400">Notes (optional, supports markdown)</span>
-            )}
-          </div>
-        )}
+        <MarkdownEditor
+          value={notes}
+          onChange={setNotes}
+          placeholder="Notes (optional)"
+          disabled={isSubmitting}
+          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500"
+          minHeight="100px"
+        />
       </div>
 
       <button

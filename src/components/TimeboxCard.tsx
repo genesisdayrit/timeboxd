@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { TimeboxWithSessions } from '../lib/types';
 import { commands } from '../lib/commands';
+import { MarkdownEditor } from './MarkdownEditor';
 
 interface TimeboxCardProps {
   timebox: TimeboxWithSessions;
@@ -34,14 +35,12 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
   const [notes, setNotes] = useState(timebox.notes ?? '');
   const [duration, setDuration] = useState(timebox.intended_duration);
 
-  // Edit mode states
+  // Edit mode state
   const [isEditingIntention, setIsEditingIntention] = useState(false);
-  const [isEditingNotes, setIsEditingNotes] = useState(false);
 
   // Refs for autosave debouncing
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intentionInputRef = useRef<HTMLInputElement>(null);
-  const notesInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Track if we have unsaved changes
   const hasChanges =
@@ -92,11 +91,6 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
     }
   }, [isEditingIntention]);
 
-  useEffect(() => {
-    if (isEditingNotes && notesInputRef.current) {
-      notesInputRef.current.focus();
-    }
-  }, [isEditingNotes]);
 
   const handleStart = async () => {
     try {
@@ -168,26 +162,13 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
 
         {/* Notes section */}
         <div className="mb-3">
-          {isEditingNotes ? (
-            <textarea
-              ref={notesInputRef}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              onBlur={() => setIsEditingNotes(false)}
-              placeholder="Add notes..."
-              rows={3}
-              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-300 text-sm rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          ) : (
-            <p
-              onClick={() => setIsEditingNotes(true)}
-              className={`text-sm cursor-pointer hover:bg-gray-700/50 px-2 py-1 -mx-2 rounded ${
-                notes ? 'text-gray-400 line-clamp-2' : 'text-gray-500 italic'
-              }`}
-            >
-              {notes || 'Add notes...'}
-            </p>
-          )}
+          <MarkdownEditor
+            value={notes}
+            onChange={setNotes}
+            placeholder="Add notes..."
+            className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-300 text-sm rounded focus-within:ring-2 focus-within:ring-blue-500"
+            minHeight="60px"
+          />
         </div>
 
         {/* Duration and actions */}
@@ -249,7 +230,15 @@ export function TimeboxCard({ timebox, onUpdate }: TimeboxCardProps) {
           </span>
         </div>
         {timebox.notes && (
-          <p className="text-sm text-gray-400 line-clamp-2 mb-1">{timebox.notes}</p>
+          <div className="text-sm text-gray-400 line-clamp-2 mb-1">
+            <MarkdownEditor
+              value={timebox.notes}
+              onChange={() => {}}
+              disabled
+              className="text-gray-400 pointer-events-none"
+              minHeight="auto"
+            />
+          </div>
         )}
         <p className="text-sm text-gray-400">
           Target: {formatDuration(timebox.intended_duration)} | Actual:{' '}
