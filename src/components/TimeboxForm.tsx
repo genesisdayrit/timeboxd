@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import Markdown from 'react-markdown';
 import { commands } from '../lib/commands';
 
 interface TimeboxFormProps {
@@ -8,21 +9,59 @@ interface TimeboxFormProps {
 const PRESET_DURATIONS = [5, 15, 45];
 
 export function TimeboxForm({ onCreated }: TimeboxFormProps) {
-  const [description, setDescription] = useState('');
+  const [intention, setIntention] = useState('');
+  const [notes, setNotes] = useState('');
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [customDuration, setCustomDuration] = useState('');
+  const [isCustom, setIsCustom] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isNotesEditing, setIsNotesEditing] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleCreate = async (duration: number) => {
-    if (!description.trim()) return;
+  const handlePresetClick = (duration: number) => {
+    setSelectedDuration(duration);
+    setIsCustom(false);
+    setCustomDuration('');
+  };
+
+  const handleCustomClick = () => {
+    setIsCustom(true);
+    setSelectedDuration(null);
+  };
+
+  const handleCustomDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCustomDuration(value);
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      setSelectedDuration(parsed);
+    } else {
+      setSelectedDuration(null);
+    }
+  };
+
+  const incrementCustomDuration = (delta: number) => {
+    const current = parseInt(customDuration, 10) || 0;
+    const newValue = Math.max(5, current + delta);
+    setCustomDuration(String(newValue));
+    setSelectedDuration(newValue);
+  };
+
+  const handleSubmit = async () => {
+    if (!intention.trim() || selectedDuration === null) return;
 
     setIsSubmitting(true);
     try {
       await commands.createTimebox({
-        description: description.trim(),
-        intended_duration: duration,
+        intention: intention.trim(),
+        intended_duration: selectedDuration,
+        notes: notes.trim() || undefined,
       });
-      setDescription('');
+      setIntention('');
+      setNotes('');
+      setSelectedDuration(null);
       setCustomDuration('');
+      setIsCustom(false);
       onCreated();
     } catch (error) {
       console.error('Failed to create timebox:', error);
@@ -31,57 +70,111 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
     }
   };
 
-  const handleCustomSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const duration = parseFloat(customDuration);
-    if (!isNaN(duration) && duration > 0) {
-      handleCreate(duration);
-    }
+  const handleNotesClick = () => {
+    setIsNotesEditing(true);
+    setTimeout(() => textareaRef.current?.focus(), 0);
   };
+
+  const handleNotesBlur = () => {
+    setIsNotesEditing(false);
+  };
+
+  const canSubmit = intention.trim() && selectedDuration !== null && !isSubmitting;
 
   return (
     <div className="bg-gray-800 rounded-lg shadow p-4 mb-6">
       <input
         type="text"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
+        value={intention}
+        onChange={(e) => setIntention(e.target.value)}
         placeholder="What are you working on?"
         className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
         disabled={isSubmitting}
       />
 
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex flex-wrap gap-2 items-center mb-4">
         {PRESET_DURATIONS.map((duration) => (
           <button
             key={duration}
-            onClick={() => handleCreate(duration)}
-            disabled={!description.trim() || isSubmitting}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            onClick={() => handlePresetClick(duration)}
+            disabled={isSubmitting}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              selectedDuration === duration && !isCustom
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {duration} min
           </button>
         ))}
 
-        <form onSubmit={handleCustomSubmit} className="flex gap-2 items-center">
+        <div className="flex gap-1 items-center">
+          <button
+            onClick={() => incrementCustomDuration(-5)}
+            disabled={isSubmitting || !isCustom}
+            className="px-2 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            -
+          </button>
           <input
             type="number"
             value={customDuration}
-            onChange={(e) => setCustomDuration(e.target.value)}
+            onChange={handleCustomDurationChange}
+            onFocus={handleCustomClick}
             placeholder="Custom"
-            min="0.5"
-            step="0.5"
-            className="w-20 px-2 py-2 bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            min="1"
+            step="5"
+            className={`w-20 px-2 py-2 bg-gray-700 border text-gray-100 placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              isCustom ? 'border-blue-500' : 'border-gray-600'
+            }`}
             disabled={isSubmitting}
           />
           <button
-            type="submit"
-            disabled={!description.trim() || !customDuration || isSubmitting}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            onClick={() => incrementCustomDuration(5)}
+            disabled={isSubmitting || !isCustom}
+            className="px-2 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Start
+            +
           </button>
-        </form>
+          <span className="text-gray-400 text-sm ml-1">min</span>
+        </div>
       </div>
+
+      <div className="mb-4">
+        {isNotesEditing ? (
+          <textarea
+            ref={textareaRef}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            onBlur={handleNotesBlur}
+            placeholder="Notes (optional, supports markdown)"
+            rows={4}
+            className="w-full px-4 py-2 bg-gray-700 border border-blue-500 text-gray-100 placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y font-mono text-sm"
+            disabled={isSubmitting}
+          />
+        ) : (
+          <div
+            onClick={handleNotesClick}
+            className="w-full min-h-[100px] px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg cursor-text hover:border-gray-500 transition-colors"
+          >
+            {notes ? (
+              <div className="prose prose-invert prose-sm max-w-none">
+                <Markdown>{notes}</Markdown>
+              </div>
+            ) : (
+              <span className="text-gray-400">Notes (optional, supports markdown)</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      <button
+        onClick={handleSubmit}
+        disabled={!canSubmit}
+        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+      >
+        Add Timebox
+      </button>
     </div>
   );
 }

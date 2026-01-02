@@ -7,8 +7,8 @@ interface TimeboxListProps {
 }
 
 export function TimeboxList({ timeboxes, onUpdate }: TimeboxListProps) {
-  // Filter out active timeboxes (they're shown in ActiveTimeboxes)
-  const nonActiveTimeboxes = timeboxes.filter((t) => t.status !== 'active');
+  // Filter out in_progress timeboxes (they're shown in ActiveTimeboxes)
+  const nonActiveTimeboxes = timeboxes.filter((t) => t.status !== 'in_progress');
 
   if (nonActiveTimeboxes.length === 0) {
     return (
@@ -18,17 +18,30 @@ export function TimeboxList({ timeboxes, onUpdate }: TimeboxListProps) {
     );
   }
 
-  const pending = nonActiveTimeboxes.filter((t) => t.status === 'pending');
+  const notStarted = nonActiveTimeboxes.filter((t) => t.status === 'not_started');
+  const paused = nonActiveTimeboxes.filter((t) => t.status === 'paused');
   const completed = nonActiveTimeboxes.filter((t) => t.status === 'completed');
+  const stopped = nonActiveTimeboxes.filter((t) => t.status === 'stopped');
   const cancelled = nonActiveTimeboxes.filter((t) => t.status === 'cancelled');
 
   return (
     <div className="space-y-6">
-      {pending.length > 0 && (
+      {notStarted.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-300 mb-3">Pending</h2>
+          <h2 className="text-lg font-semibold text-gray-300 mb-3">Not Started</h2>
           <div className="space-y-2">
-            {pending.map((timebox) => (
+            {notStarted.map((timebox) => (
+              <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {paused.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-gray-300 mb-3">Paused</h2>
+          <div className="space-y-2">
+            {paused.map((timebox) => (
               <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} />
             ))}
           </div>
@@ -40,6 +53,17 @@ export function TimeboxList({ timeboxes, onUpdate }: TimeboxListProps) {
           <h2 className="text-lg font-semibold text-gray-300 mb-3">Completed</h2>
           <div className="space-y-2">
             {completed.map((timebox) => (
+              <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {stopped.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-gray-300 mb-3">Stopped</h2>
+          <div className="space-y-2">
+            {stopped.map((timebox) => (
               <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} />
             ))}
           </div>
