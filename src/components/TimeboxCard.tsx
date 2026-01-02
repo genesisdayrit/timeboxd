@@ -292,7 +292,7 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
               disabled={duration <= 5}
               className="w-7 h-7 bg-neutral-900 text-neutral-300 rounded hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
             >
-              -5
+              -
             </button>
             <input
               type="number"
@@ -311,7 +311,7 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
               onClick={() => handleDurationChange(duration + 5)}
               className="w-7 h-7 bg-neutral-900 text-neutral-300 rounded hover:bg-neutral-800 transition-colors text-sm"
             >
-              +5
+              +
             </button>
             <span className="text-sm text-neutral-400">min</span>
           </div>
