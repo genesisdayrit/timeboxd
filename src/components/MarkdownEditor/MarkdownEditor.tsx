@@ -71,9 +71,18 @@ export function MarkdownEditor({
 
     const currentMarkdown = serializeToMarkdown(editor.getHTML());
     if (value !== currentMarkdown) {
+      // Save cursor position before replacing content
+      const { from, to } = editor.state.selection;
+
       isExternalUpdate.current = true;
       editor.commands.setContent(parseMarkdownToHTML(value));
       isExternalUpdate.current = false;
+
+      // Restore cursor position (clamped to valid range)
+      const maxPos = editor.state.doc.content.size;
+      const safeFrom = Math.min(from, maxPos);
+      const safeTo = Math.min(to, maxPos);
+      editor.commands.setTextSelection({ from: safeFrom, to: safeTo });
     }
   }, [value, editor]);
 
