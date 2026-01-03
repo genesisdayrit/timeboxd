@@ -59,6 +59,9 @@ pub struct Timebox {
     pub display_order: Option<i64>,
     pub archived_at: Option<String>,
     pub finished_at: Option<String>,
+    pub linear_project_id: Option<i64>,
+    pub linear_issue_id: Option<String>,
+    pub linear_issue_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -66,6 +69,7 @@ pub struct CreateTimeboxRequest {
     pub intention: String,
     pub intended_duration: i64, // in seconds
     pub notes: Option<String>,
+    pub linear_project_id: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -94,6 +98,9 @@ impl Timebox {
             display_order: row.get(12)?,
             archived_at: row.get(13)?,
             finished_at: row.get(14)?,
+            linear_project_id: row.get(15)?,
+            linear_issue_id: row.get(16)?,
+            linear_issue_url: row.get(17)?,
         })
     }
 }

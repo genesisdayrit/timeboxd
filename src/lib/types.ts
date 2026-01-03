@@ -16,6 +16,9 @@ export interface Timebox {
   display_order?: number;
   archived_at?: string;
   finished_at?: string;
+  linear_project_id?: number;
+  linear_issue_id?: string;
+  linear_issue_url?: string;
 }
 
 export interface ReorderTimeboxRequest {
@@ -40,6 +43,7 @@ export interface CreateTimeboxRequest {
   intention: string;
   intended_duration: number;
   notes?: string;
+  linear_project_id?: number;
 }
 
 export interface UpdateTimeboxRequest {
@@ -115,4 +119,31 @@ export interface SaveLinearProjectRequest {
   name: string;
   description?: string;
   state?: string;
+}
+
+// Linear Issue types
+export interface LinearIssue {
+  id: string;
+  identifier: string;
+  url: string;
+  title: string;
+}
+
+export interface CreateLinearIssueRequest {
+  title: string;
+  description?: string;
+  project_id: string;
+  team_id: string;
+}
+
+export interface CreateLinearIssueResult {
+  success: boolean;
+  issue?: LinearIssue;
+  error?: string;
+}
+
+export interface LinearWorkflowState {
+  id: string;
+  name: string;
+  state_type: string;
 }

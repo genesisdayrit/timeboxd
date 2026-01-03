@@ -5,7 +5,7 @@ use chrono::Local;
 use rusqlite::params;
 use tauri::State;
 
-const TIMEBOX_SELECT_COLUMNS: &str = "id, intention, notes, intended_duration, status, created_at, updated_at, started_at, completed_at, after_time_stopped_at, deleted_at, canceled_at, display_order, archived_at, finished_at";
+const TIMEBOX_SELECT_COLUMNS: &str = "id, intention, notes, intended_duration, status, created_at, updated_at, started_at, completed_at, after_time_stopped_at, deleted_at, canceled_at, display_order, archived_at, finished_at, linear_project_id, linear_issue_id, linear_issue_url";
 
 #[tauri::command]
 pub fn create_timebox(
@@ -15,8 +15,8 @@ pub fn create_timebox(
     let conn = state.db.lock().map_err(|e| e.to_string())?;
 
     conn.execute(
-        "INSERT INTO timeboxes (intention, intended_duration, notes) VALUES (?1, ?2, ?3)",
-        params![request.intention, request.intended_duration, request.notes],
+        "INSERT INTO timeboxes (intention, intended_duration, notes, linear_project_id) VALUES (?1, ?2, ?3, ?4)",
+        params![request.intention, request.intended_duration, request.notes, request.linear_project_id],
     )
     .map_err(|e| e.to_string())?;
 
@@ -614,4 +614,59 @@ pub fn get_archived_timeboxes(state: State<'_, AppState>) -> Result<Vec<TimeboxW
     }
 
     Ok(result)
+}
+
+// Command: Set Linear issue on a timebox
+#[tauri::command]
+pub fn set_timebox_linear_issue(
+    state: State<'_, AppState>,
+    timebox_id: i64,
+    linear_issue_id: String,
+    linear_issue_url: String,
+) -> Result<Timebox, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    conn.execute(
+        "UPDATE timeboxes SET linear_issue_id = ?1, linear_issue_url = ?2, updated_at = ?3 WHERE id = ?4",
+        params![linear_issue_id, linear_issue_url, now, timebox_id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    let mut stmt = conn
+        .prepare(&format!("SELECT {} FROM timeboxes WHERE id = ?1", TIMEBOX_SELECT_COLUMNS))
+        .map_err(|e| e.to_string())?;
+
+    let timebox = stmt
+        .query_row(params![timebox_id], Timebox::from_row)
+        .map_err(|e| e.to_string())?;
+
+    Ok(timebox)
+}
+
+// Command: Set Linear project on a timebox
+#[tauri::command]
+pub fn set_timebox_linear_project(
+    state: State<'_, AppState>,
+    timebox_id: i64,
+    linear_project_id: Option<i64>,
+) -> Result<Timebox, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    conn.execute(
+        "UPDATE timeboxes SET linear_project_id = ?1, updated_at = ?2 WHERE id = ?3",
+        params![linear_project_id, now, timebox_id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    let mut stmt = conn
+        .prepare(&format!("SELECT {} FROM timeboxes WHERE id = ?1", TIMEBOX_SELECT_COLUMNS))
+        .map_err(|e| e.to_string())?;
+
+    let timebox = stmt
+        .query_row(params![timebox_id], Timebox::from_row)
+        .map_err(|e| e.to_string())?;
+
+    Ok(timebox)
 }

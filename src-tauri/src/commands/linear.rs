@@ -272,3 +272,249 @@ pub fn delete_linear_project(
 
     Ok(())
 }
+
+// ============================================
+// Linear Issue API Commands
+// ============================================
+
+// GraphQL Response types for Linear Issue API
+#[derive(Debug, Deserialize)]
+struct IssueCreateResponse {
+    data: Option<IssueCreateData>,
+    errors: Option<Vec<LinearError>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct IssueCreateData {
+    issue_create: IssueCreateResult,
+}
+
+#[derive(Debug, Deserialize)]
+struct IssueCreateResult {
+    success: bool,
+    issue: Option<LinearIssue>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LinearIssue {
+    pub id: String,
+    pub identifier: String,
+    pub url: String,
+    pub title: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateLinearIssueRequest {
+    pub title: String,
+    pub description: Option<String>,
+    pub project_id: String,
+    pub team_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateLinearIssueResult {
+    pub success: bool,
+    pub issue: Option<LinearIssue>,
+    pub error: Option<String>,
+}
+
+// Command: Create a Linear issue
+#[tauri::command]
+pub fn create_linear_issue(
+    api_key: String,
+    request: CreateLinearIssueRequest,
+) -> Result<CreateLinearIssueResult, String> {
+    let client = reqwest::blocking::Client::new();
+
+    // Escape special characters for GraphQL
+    let title_escaped = request.title.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n");
+    let description_escaped = request
+        .description
+        .clone()
+        .unwrap_or_default()
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\n', "\\n");
+
+    let query = format!(
+        r#"{{ "query": "mutation {{ issueCreate(input: {{ title: \"{}\", description: \"{}\", projectId: \"{}\", teamId: \"{}\" }}) {{ success issue {{ id identifier url title }} }} }}" }}"#,
+        title_escaped,
+        description_escaped,
+        request.project_id,
+        request.team_id
+    );
+
+    let response = client
+        .post("https://api.linear.app/graphql")
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .body(query)
+        .send()
+        .map_err(|e| format!("Failed to connect to Linear: {}", e))?;
+
+    if !response.status().is_success() {
+        return Ok(CreateLinearIssueResult {
+            success: false,
+            issue: None,
+            error: Some(format!("Linear API returned status: {}", response.status())),
+        });
+    }
+
+    let result: IssueCreateResponse = response
+        .json()
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    if let Some(errors) = result.errors {
+        let error_msg = errors
+            .into_iter()
+            .map(|e| e.message)
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Ok(CreateLinearIssueResult {
+            success: false,
+            issue: None,
+            error: Some(error_msg),
+        });
+    }
+
+    match result.data {
+        Some(data) => Ok(CreateLinearIssueResult {
+            success: data.issue_create.success,
+            issue: data.issue_create.issue,
+            error: None,
+        }),
+        None => Ok(CreateLinearIssueResult {
+            success: false,
+            issue: None,
+            error: Some("No data returned from Linear".to_string()),
+        }),
+    }
+}
+
+// GraphQL Response types for workflow states
+#[derive(Debug, Deserialize)]
+struct TeamStatesResponse {
+    data: Option<TeamStatesData>,
+    errors: Option<Vec<LinearError>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TeamStatesData {
+    team: TeamWithStates,
+}
+
+#[derive(Debug, Deserialize)]
+struct TeamWithStates {
+    states: StatesNodes,
+}
+
+#[derive(Debug, Deserialize)]
+struct StatesNodes {
+    nodes: Vec<LinearWorkflowState>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LinearWorkflowState {
+    pub id: String,
+    pub name: String,
+    #[serde(rename = "type")]
+    pub state_type: String,
+}
+
+// Command: Get workflow states for a team
+#[tauri::command]
+pub fn get_linear_team_states(api_key: String, team_id: String) -> Result<Vec<LinearWorkflowState>, String> {
+    let client = reqwest::blocking::Client::new();
+
+    let query = format!(
+        r#"{{ "query": "{{ team(id: \"{}\") {{ states {{ nodes {{ id name type }} }} }} }}" }}"#,
+        team_id
+    );
+
+    let response = client
+        .post("https://api.linear.app/graphql")
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .body(query)
+        .send()
+        .map_err(|e| format!("Failed to connect to Linear: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("Linear API returned status: {}", response.status()));
+    }
+
+    let result: TeamStatesResponse = response
+        .json()
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    if let Some(errors) = result.errors {
+        return Err(errors
+            .into_iter()
+            .map(|e| e.message)
+            .collect::<Vec<_>>()
+            .join(", "));
+    }
+
+    Ok(result.data.map(|d| d.team.states.nodes).unwrap_or_default())
+}
+
+// GraphQL Response types for issue update
+#[derive(Debug, Deserialize)]
+struct IssueUpdateResponse {
+    data: Option<IssueUpdateData>,
+    errors: Option<Vec<LinearError>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct IssueUpdateData {
+    issue_update: IssueUpdateResult,
+}
+
+#[derive(Debug, Deserialize)]
+struct IssueUpdateResult {
+    success: bool,
+}
+
+// Command: Update a Linear issue's state
+#[tauri::command]
+pub fn update_linear_issue_state(
+    api_key: String,
+    issue_id: String,
+    state_id: String,
+) -> Result<bool, String> {
+    let client = reqwest::blocking::Client::new();
+
+    let query = format!(
+        r#"{{ "query": "mutation {{ issueUpdate(id: \"{}\", input: {{ stateId: \"{}\" }}) {{ success }} }}" }}"#,
+        issue_id,
+        state_id
+    );
+
+    let response = client
+        .post("https://api.linear.app/graphql")
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .body(query)
+        .send()
+        .map_err(|e| format!("Failed to connect to Linear: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("Linear API returned status: {}", response.status()));
+    }
+
+    let result: IssueUpdateResponse = response
+        .json()
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    if let Some(errors) = result.errors {
+        return Err(errors
+            .into_iter()
+            .map(|e| e.message)
+            .collect::<Vec<_>>()
+            .join(", "));
+    }
+
+    Ok(result.data.map(|d| d.issue_update.success).unwrap_or(false))
+}
