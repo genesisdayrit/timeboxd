@@ -568,6 +568,25 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
         </div>
 
         <div className="flex items-center gap-2 ml-4">
+          {/* Linear link for in_progress timeboxes */}
+          {timebox.status === 'in_progress' && timebox.linear_issue_url && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleOpenIssue}
+                className="px-2 py-1 bg-[#5E6AD2]/20 text-[#5E6AD2] text-xs rounded hover:bg-[#5E6AD2]/30 transition-colors flex items-center gap-1"
+                title="Open in Linear"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Linear
+              </button>
+              <CopyButton
+                text={timebox.linear_issue_url}
+                className="w-6 h-6 bg-[#5E6AD2]/20 text-[#5E6AD2] rounded hover:bg-[#5E6AD2]/30"
+              />
+            </div>
+          )}
           {(timebox.status === 'completed' || timebox.status === 'cancelled' || timebox.status === 'stopped') && (
             <>
               {timebox.status === 'stopped' && (
