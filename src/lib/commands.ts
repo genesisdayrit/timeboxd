@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest, Integration, CreateIntegrationRequest, LinearTestResult, TodoistTestResult, LinearTeam, LinearApiProject, LinearProject, SaveLinearProjectRequest, CreateLinearIssueRequest, CreateLinearIssueResult, LinearWorkflowState } from './types';
+import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest, Integration, CreateIntegrationRequest, LinearTestResult, TodoistTestResult, LinearTeam, LinearApiProject, LinearProject, SaveLinearProjectRequest, LinearApiIssue, CreateLinearIssueRequest, CreateLinearIssueResult, LinearTeamWorkflowState } from './types';
 
 export const commands = {
   createTimebox: (request: CreateTimeboxRequest) =>
@@ -102,10 +102,13 @@ export const commands = {
     invoke<CreateLinearIssueResult>('create_linear_issue', { apiKey, request }),
 
   getLinearTeamStates: (apiKey: string, teamId: string) =>
-    invoke<LinearWorkflowState[]>('get_linear_team_states', { apiKey, teamId }),
+    invoke<LinearTeamWorkflowState[]>('get_linear_team_states', { apiKey, teamId }),
 
   updateLinearIssueState: (apiKey: string, issueId: string, stateId: string) =>
     invoke<boolean>('update_linear_issue_state', { apiKey, issueId, stateId }),
+
+  getLinearProjectIssues: (apiKey: string, projectId: string) =>
+    invoke<LinearApiIssue[]>('get_linear_project_issues', { apiKey, projectId }),
 
   setTimeboxLinearIssue: (timeboxId: number, linearIssueId: string, linearIssueUrl: string) =>
     invoke<Timebox>('set_timebox_linear_issue', { timeboxId, linearIssueId, linearIssueUrl }),

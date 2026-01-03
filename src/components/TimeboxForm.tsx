@@ -5,11 +5,17 @@ import type { LinearProject, LinearConfig } from '../lib/types';
 
 interface TimeboxFormProps {
   onCreated: () => void;
+  linearProjectId?: number;
+  // When provided, auto-create Linear issue on timebox creation (for ProjectIssuesView context)
+  linearProjectDetails?: {
+    linearProjectId: string;
+    linearTeamId: string;
+  };
 }
 
 const PRESET_DURATIONS = [5, 15, 45];
 
-export function TimeboxForm({ onCreated }: TimeboxFormProps) {
+export function TimeboxForm({ onCreated, linearProjectId, linearProjectDetails }: TimeboxFormProps) {
   const [intention, setIntention] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
@@ -75,15 +81,21 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
 
     setIsSubmitting(true);
     try {
+      // Use the passed linearProjectId prop if provided, otherwise use the dropdown selection
+      const projectIdToUse = linearProjectId ?? selectedProjectId ?? undefined;
       const timebox = await commands.createTimebox({
         intention: intention.trim(),
         intended_duration: selectedDuration,
         notes: notes.trim() || undefined,
-        linear_project_id: selectedProjectId ?? undefined,
+        linear_project_id: projectIdToUse,
       });
 
-      // Auto-create Linear issue if project is selected
-      if (selectedProjectId && selectedProject) {
+      // Auto-create Linear issue if project is selected (from dropdown or from ProjectIssuesView context)
+      const projectToCreateIssueFor = selectedProjectId && selectedProject
+        ? { linearProjectId: selectedProject.linear_project_id, linearTeamId: selectedProject.linear_team_id }
+        : linearProjectDetails;
+
+      if (projectToCreateIssueFor) {
         try {
           const integration = await commands.getIntegrationByType('linear');
           if (integration) {
@@ -91,8 +103,8 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
             const result = await commands.createLinearIssue(config.api_key, {
               title: intention.trim(),
               description: notes.trim() || undefined,
-              project_id: selectedProject.linear_project_id,
-              team_id: selectedProject.linear_team_id,
+              project_id: projectToCreateIssueFor.linearProjectId,
+              team_id: projectToCreateIssueFor.linearTeamId,
             });
             if (result.success && result.issue) {
               await commands.setTimeboxLinearIssue(
@@ -194,8 +206,8 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
         />
       </div>
 
-      {/* Linear Project Dropdown */}
-      {activeProjects.length > 0 && (
+      {/* Linear Project Dropdown - hidden when already in a project context */}
+      {activeProjects.length > 0 && !linearProjectDetails && (
         <div className="mb-4 relative" ref={projectDropdownRef}>
           <button
             type="button"

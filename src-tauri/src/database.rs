@@ -159,16 +159,35 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
         )?;
     }
 
-    // Migration 8: Add Linear issue fields to timeboxes
+    // Migration 8: Add linear issue fields to timeboxes for linking timeboxes to Linear issues
     if version < 8 {
         conn.execute_batch(r#"
             ALTER TABLE timeboxes ADD COLUMN linear_issue_id TEXT;
+            ALTER TABLE timeboxes ADD COLUMN linear_issue_identifier TEXT;
             ALTER TABLE timeboxes ADD COLUMN linear_issue_url TEXT;
 
             CREATE INDEX IF NOT EXISTS idx_timeboxes_linear_issue_id ON timeboxes(linear_issue_id);
 
             PRAGMA user_version = 8;
         "#)?;
+    }
+
+    // Migration 9: Add linear_issue_identifier column if missing
+    // This handles databases that ran main's migration 8 (which only had linear_issue_id and linear_issue_url)
+    if version < 9 {
+        // Check if column already exists (from full migration 8)
+        let has_identifier: bool = conn
+            .prepare("SELECT 1 FROM pragma_table_info('timeboxes') WHERE name = 'linear_issue_identifier'")?
+            .exists([])?;
+
+        if !has_identifier {
+            conn.execute(
+                "ALTER TABLE timeboxes ADD COLUMN linear_issue_identifier TEXT",
+                [],
+            )?;
+        }
+
+        conn.execute("PRAGMA user_version = 9", [])?;
     }
 
     Ok(())

@@ -1,8 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { commands } from '../lib/commands';
 import type { LinearTeam, LinearApiProject, LinearProject, LinearConfig } from '../lib/types';
+import { ProjectIssuesView } from '../components/ProjectIssuesView';
 
-export function LinearPage() {
+interface SelectedProject {
+  projectId: string;
+  projectName: string;
+  localProjectId?: number;
+  teamId: string;
+}
+
+interface LinearPageProps {
+  onTimeboxCreated?: () => void;
+}
+
+export function LinearPage({ onTimeboxCreated }: LinearPageProps) {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [teams, setTeams] = useState<LinearTeam[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
@@ -13,6 +25,7 @@ export function LinearPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [selectedProject, setSelectedProject] = useState<SelectedProject | null>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -150,6 +163,21 @@ export function LinearPage() {
 
   const activeProjects = savedProjects.filter((p) => p.is_active_timebox_project);
 
+  // Show issues sub-view if a project is selected
+  if (selectedProject && apiKey) {
+    return (
+      <ProjectIssuesView
+        apiKey={apiKey}
+        projectId={selectedProject.projectId}
+        projectName={selectedProject.projectName}
+        localProjectId={selectedProject.localProjectId}
+        teamId={selectedProject.teamId}
+        onBack={() => setSelectedProject(null)}
+        onTimeboxCreated={onTimeboxCreated}
+      />
+    );
+  }
+
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold text-white mb-6">Linear</h2>
@@ -162,7 +190,15 @@ export function LinearPage() {
             {activeProjects.map((project) => (
               <div
                 key={project.id}
-                className="flex items-center justify-between bg-[#0a0a0a] rounded-lg p-4 border border-neutral-800"
+                onClick={() =>
+                  setSelectedProject({
+                    projectId: project.linear_project_id,
+                    projectName: project.name,
+                    localProjectId: project.id,
+                    teamId: project.linear_team_id,
+                  })
+                }
+                className="flex items-center justify-between bg-[#0a0a0a] rounded-lg p-4 border border-neutral-800 cursor-pointer hover:border-neutral-700 transition-colors"
               >
                 <div>
                   <p className="font-medium text-white">{project.name}</p>
@@ -171,7 +207,10 @@ export function LinearPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => handleToggleActive(project)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleActive(project);
+                  }}
                   className="px-3 py-1 text-sm text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition-colors"
                 >
                   Deactivate
@@ -257,7 +296,15 @@ export function LinearPage() {
                 return (
                   <div
                     key={project.id}
-                    className="flex items-center justify-between bg-[#0a0a0a] rounded-lg p-4 border border-neutral-800"
+                    onClick={() =>
+                      setSelectedProject({
+                        projectId: project.id,
+                        projectName: project.name,
+                        localProjectId: saved?.id,
+                        teamId: selectedTeamId!,
+                      })
+                    }
+                    className="flex items-center justify-between bg-[#0a0a0a] rounded-lg p-4 border border-neutral-800 cursor-pointer hover:border-neutral-700 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -275,14 +322,20 @@ export function LinearPage() {
                     <div className="flex items-center gap-2 ml-4">
                       {!isSaved ? (
                         <button
-                          onClick={() => handleSaveProject(project)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSaveProject(project);
+                          }}
                           className="px-3 py-1.5 text-sm bg-neutral-800 text-white rounded hover:bg-neutral-700 transition-colors"
                         >
                           Save
                         </button>
                       ) : (
                         <button
-                          onClick={() => handleToggleActive(saved)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleActive(saved);
+                          }}
                           className={`px-3 py-1.5 text-sm rounded transition-colors ${
                             isActive
                               ? 'bg-[#5E6AD2] text-white hover:bg-[#4f5ab8]'
@@ -309,7 +362,15 @@ export function LinearPage() {
             {savedProjects.map((project) => (
               <div
                 key={project.id}
-                className="flex items-center justify-between bg-[#0a0a0a] rounded-lg p-4 border border-neutral-800"
+                onClick={() =>
+                  setSelectedProject({
+                    projectId: project.linear_project_id,
+                    projectName: project.name,
+                    localProjectId: project.id,
+                    teamId: project.linear_team_id,
+                  })
+                }
+                className="flex items-center justify-between bg-[#0a0a0a] rounded-lg p-4 border border-neutral-800 cursor-pointer hover:border-neutral-700 transition-colors"
               >
                 <div>
                   <p className="font-medium text-white">{project.name}</p>
@@ -318,7 +379,10 @@ export function LinearPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => handleToggleActive(project)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleActive(project);
+                  }}
                   className={`px-3 py-1.5 text-sm rounded transition-colors ${
                     project.is_active_timebox_project
                       ? 'bg-[#5E6AD2] text-white hover:bg-[#4f5ab8]'

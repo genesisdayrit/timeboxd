@@ -64,6 +64,74 @@ struct LinearError {
     message: String,
 }
 
+// GraphQL Response types for Linear Issues API
+#[derive(Debug, Deserialize)]
+struct LinearIssuesResponse {
+    data: Option<LinearIssuesData>,
+    errors: Option<Vec<LinearError>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LinearIssuesData {
+    project: LinearProjectWithIssues,
+}
+
+#[derive(Debug, Deserialize)]
+struct LinearProjectWithIssues {
+    issues: LinearIssuesNodes,
+}
+
+#[derive(Debug, Deserialize)]
+struct LinearIssuesNodes {
+    nodes: Vec<LinearApiIssue>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LinearApiIssue {
+    pub id: String,
+    pub identifier: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub url: String,
+    pub priority: Option<i32>,
+    #[serde(rename = "priorityLabel")]
+    pub priority_label: Option<String>,
+    #[serde(rename = "dueDate")]
+    pub due_date: Option<String>,
+    pub estimate: Option<f64>,
+    pub state: Option<LinearWorkflowState>,
+    pub assignee: Option<LinearUser>,
+    pub labels: Option<LinearLabelsNodes>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LinearWorkflowState {
+    pub id: String,
+    pub name: String,
+    pub color: String,
+    #[serde(rename = "type")]
+    pub state_type: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LinearUser {
+    pub id: String,
+    pub name: String,
+    pub email: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LinearLabelsNodes {
+    pub nodes: Vec<LinearLabel>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LinearLabel {
+    pub id: String,
+    pub name: String,
+    pub color: String,
+}
+
 // Command: Fetch teams from Linear
 #[tauri::command]
 pub fn get_linear_teams(api_key: String) -> Result<Vec<LinearTeam>, String> {
@@ -430,11 +498,11 @@ struct TeamWithStates {
 
 #[derive(Debug, Deserialize)]
 struct StatesNodes {
-    nodes: Vec<LinearWorkflowState>,
+    nodes: Vec<LinearTeamWorkflowState>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LinearWorkflowState {
+pub struct LinearTeamWorkflowState {
     pub id: String,
     pub name: String,
     #[serde(rename = "type")]
@@ -443,7 +511,7 @@ pub struct LinearWorkflowState {
 
 // Command: Get workflow states for a team
 #[tauri::command]
-pub fn get_linear_team_states(api_key: String, team_id: String) -> Result<Vec<LinearWorkflowState>, String> {
+pub fn get_linear_team_states(api_key: String, team_id: String) -> Result<Vec<LinearTeamWorkflowState>, String> {
     let client = reqwest::blocking::Client::new();
 
     let query = format!(
@@ -536,4 +604,44 @@ pub fn update_linear_issue_state(
     }
 
     Ok(result.data.map(|d| d.issue_update.success).unwrap_or(false))
+}
+
+// Command: Fetch issues for a project from Linear
+#[tauri::command]
+pub fn get_linear_project_issues(
+    api_key: String,
+    project_id: String,
+) -> Result<Vec<LinearApiIssue>, String> {
+    let client = reqwest::blocking::Client::new();
+
+    let query = format!(
+        r#"{{ "query": "{{ project(id: \"{}\") {{ issues(first: 250) {{ nodes {{ id identifier title description url priority priorityLabel dueDate estimate state {{ id name color type }} assignee {{ id name email }} labels {{ nodes {{ id name color }} }} }} }} }} }}" }}"#,
+        project_id
+    );
+
+    let response = client
+        .post("https://api.linear.app/graphql")
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .body(query)
+        .send()
+        .map_err(|e| format!("Failed to connect to Linear: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("Linear API returned status: {}", response.status()));
+    }
+
+    let result: LinearIssuesResponse = response
+        .json()
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    if let Some(errors) = result.errors {
+        return Err(errors
+            .into_iter()
+            .map(|e| e.message)
+            .collect::<Vec<_>>()
+            .join(", "));
+    }
+
+    Ok(result.data.map(|d| d.project.issues.nodes).unwrap_or_default())
 }

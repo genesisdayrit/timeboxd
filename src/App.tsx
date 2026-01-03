@@ -73,7 +73,7 @@ function App() {
           />
         )}
         {currentPage === 'integrations' && <IntegrationsPage onLinearConnectionChange={checkLinearConnection} />}
-        {currentPage === 'linear' && <LinearPage />}
+        {currentPage === 'linear' && <LinearPage onTimeboxCreated={refreshData} />}
       </main>
     </div>
   );
