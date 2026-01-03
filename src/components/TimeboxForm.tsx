@@ -6,11 +6,16 @@ import type { LinearProject, LinearConfig } from '../lib/types';
 interface TimeboxFormProps {
   onCreated: () => void;
   linearProjectId?: number;
+  // When provided, auto-create Linear issue on timebox creation (for ProjectIssuesView context)
+  linearProjectDetails?: {
+    linearProjectId: string;
+    linearTeamId: string;
+  };
 }
 
 const PRESET_DURATIONS = [5, 15, 45];
 
-export function TimeboxForm({ onCreated, linearProjectId }: TimeboxFormProps) {
+export function TimeboxForm({ onCreated, linearProjectId, linearProjectDetails }: TimeboxFormProps) {
   const [intention, setIntention] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
@@ -85,8 +90,12 @@ export function TimeboxForm({ onCreated, linearProjectId }: TimeboxFormProps) {
         linear_project_id: projectIdToUse,
       });
 
-      // Auto-create Linear issue if project is selected
-      if (selectedProjectId && selectedProject) {
+      // Auto-create Linear issue if project is selected (from dropdown or from ProjectIssuesView context)
+      const projectToCreateIssueFor = selectedProjectId && selectedProject
+        ? { linearProjectId: selectedProject.linear_project_id, linearTeamId: selectedProject.linear_team_id }
+        : linearProjectDetails;
+
+      if (projectToCreateIssueFor) {
         try {
           const integration = await commands.getIntegrationByType('linear');
           if (integration) {
@@ -94,8 +103,8 @@ export function TimeboxForm({ onCreated, linearProjectId }: TimeboxFormProps) {
             const result = await commands.createLinearIssue(config.api_key, {
               title: intention.trim(),
               description: notes.trim() || undefined,
-              project_id: selectedProject.linear_project_id,
-              team_id: selectedProject.linear_team_id,
+              project_id: projectToCreateIssueFor.linearProjectId,
+              team_id: projectToCreateIssueFor.linearTeamId,
             });
             if (result.success && result.issue) {
               await commands.setTimeboxLinearIssue(

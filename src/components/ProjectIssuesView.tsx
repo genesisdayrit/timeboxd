@@ -9,6 +9,7 @@ interface ProjectIssuesViewProps {
   projectId: string;
   projectName: string;
   localProjectId?: number;
+  teamId: string;
   onBack: () => void;
 }
 
@@ -50,6 +51,7 @@ export function ProjectIssuesView({
   projectId,
   projectName,
   localProjectId,
+  teamId,
   onBack,
 }: ProjectIssuesViewProps) {
   const [issues, setIssues] = useState<LinearApiIssue[]>([]);
@@ -93,10 +95,23 @@ export function ProjectIssuesView({
     loadData();
   }, [apiKey, projectId, loadExistingTimeboxes]);
 
-  // Refresh existing timeboxes after a new one is created
-  const handleTimeboxCreated = useCallback(() => {
-    loadExistingTimeboxes();
-  }, [loadExistingTimeboxes]);
+  // Refresh issues list from Linear
+  const refreshIssues = useCallback(async () => {
+    try {
+      const issuesData = await commands.getLinearProjectIssues(apiKey, projectId);
+      setIssues(issuesData);
+    } catch (err) {
+      console.error('Failed to refresh issues:', err);
+    }
+  }, [apiKey, projectId]);
+
+  // Refresh existing timeboxes and issues list after a new one is created
+  const handleTimeboxCreated = useCallback(async () => {
+    await Promise.all([
+      loadExistingTimeboxes(),
+      refreshIssues(),
+    ]);
+  }, [loadExistingTimeboxes, refreshIssues]);
 
   const groupedIssues = groupIssuesByState(issues);
 
@@ -126,8 +141,15 @@ export function ProjectIssuesView({
         <h2 className="text-2xl font-bold text-white">{projectName}</h2>
       </div>
 
-      {/* Create Timebox Form - linked to this project */}
-      <TimeboxForm onCreated={handleTimeboxCreated} linearProjectId={localProjectId} />
+      {/* Create Timebox Form - linked to this project with auto-create Linear issue */}
+      <TimeboxForm
+        onCreated={handleTimeboxCreated}
+        linearProjectId={localProjectId}
+        linearProjectDetails={{
+          linearProjectId: projectId,
+          linearTeamId: teamId,
+        }}
+      />
 
       {loading ? (
         <p className="text-neutral-500">Loading issues...</p>

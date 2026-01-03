@@ -7,6 +7,7 @@ interface SelectedProject {
   projectId: string;
   projectName: string;
   localProjectId?: number;
+  teamId: string;
 }
 
 export function LinearPage() {
@@ -166,6 +167,7 @@ export function LinearPage() {
         projectId={selectedProject.projectId}
         projectName={selectedProject.projectName}
         localProjectId={selectedProject.localProjectId}
+        teamId={selectedProject.teamId}
         onBack={() => setSelectedProject(null)}
       />
     );
@@ -188,6 +190,7 @@ export function LinearPage() {
                     projectId: project.linear_project_id,
                     projectName: project.name,
                     localProjectId: project.id,
+                    teamId: project.linear_team_id,
                   })
                 }
                 className="flex items-center justify-between bg-[#0a0a0a] rounded-lg p-4 border border-neutral-800 cursor-pointer hover:border-neutral-700 transition-colors"
@@ -293,6 +296,7 @@ export function LinearPage() {
                         projectId: project.id,
                         projectName: project.name,
                         localProjectId: saved?.id,
+                        teamId: selectedTeamId!,
                       })
                     }
                     className="flex items-center justify-between bg-[#0a0a0a] rounded-lg p-4 border border-neutral-800 cursor-pointer hover:border-neutral-700 transition-colors"
@@ -358,6 +362,7 @@ export function LinearPage() {
                     projectId: project.linear_project_id,
                     projectName: project.name,
                     localProjectId: project.id,
+                    teamId: project.linear_team_id,
                   })
                 }
                 className="flex items-center justify-between bg-[#0a0a0a] rounded-lg p-4 border border-neutral-800 cursor-pointer hover:border-neutral-700 transition-colors"
