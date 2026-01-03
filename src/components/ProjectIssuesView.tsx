@@ -11,6 +11,7 @@ interface ProjectIssuesViewProps {
   localProjectId?: number;
   teamId: string;
   onBack: () => void;
+  onTimeboxCreated?: () => void;
 }
 
 type StateType = 'unstarted' | 'started' | 'backlog' | 'completed' | 'canceled';
@@ -53,6 +54,7 @@ export function ProjectIssuesView({
   localProjectId,
   teamId,
   onBack,
+  onTimeboxCreated,
 }: ProjectIssuesViewProps) {
   const [issues, setIssues] = useState<LinearApiIssue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,7 +113,9 @@ export function ProjectIssuesView({
       loadExistingTimeboxes(),
       refreshIssues(),
     ]);
-  }, [loadExistingTimeboxes, refreshIssues]);
+    // Also notify parent to refresh Sessions page data
+    onTimeboxCreated?.();
+  }, [loadExistingTimeboxes, refreshIssues, onTimeboxCreated]);
 
   const groupedIssues = groupIssuesByState(issues);
 

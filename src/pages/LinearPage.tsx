@@ -10,7 +10,11 @@ interface SelectedProject {
   teamId: string;
 }
 
-export function LinearPage() {
+interface LinearPageProps {
+  onTimeboxCreated?: () => void;
+}
+
+export function LinearPage({ onTimeboxCreated }: LinearPageProps) {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [teams, setTeams] = useState<LinearTeam[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
@@ -169,6 +173,7 @@ export function LinearPage() {
         localProjectId={selectedProject.localProjectId}
         teamId={selectedProject.teamId}
         onBack={() => setSelectedProject(null)}
+        onTimeboxCreated={onTimeboxCreated}
       />
     );
   }
