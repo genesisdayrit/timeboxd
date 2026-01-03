@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import type { TimeboxWithSessions } from '../lib/types';
+import type { TimeboxWithSessions, LinearProject, LinearConfig } from '../lib/types';
 import { commands } from '../lib/commands';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CopyButton } from './CopyButton';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 interface TimeboxCardProps {
   timebox: TimeboxWithSessions;
@@ -48,6 +49,32 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
   // Refs for autosave debouncing
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intentionInputRef = useRef<HTMLInputElement>(null);
+
+  // Linear project state
+  const [activeProjects, setActiveProjects] = useState<LinearProject[]>([]);
+  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
+  const [isCreatingIssue, setIsCreatingIssue] = useState(false);
+  const projectDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load active projects for dropdown
+  useEffect(() => {
+    if (isFullyEditable && !isArchived) {
+      commands.getActiveTimeboxProjects().then(setActiveProjects).catch(console.error);
+    }
+  }, [isFullyEditable, isArchived]);
+
+  // Handle click outside to close project dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (projectDropdownRef.current && !projectDropdownRef.current.contains(event.target as Node)) {
+        setIsProjectDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const currentProject = activeProjects.find(p => p.id === timebox.linear_project_id);
 
   // Track if we have unsaved changes
   const hasChanges =
@@ -103,6 +130,29 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
   const handleStart = async () => {
     try {
       await commands.startTimebox(timebox.id);
+
+      // Sync Linear issue status to "In Progress" if issue exists
+      if (timebox.linear_issue_id && timebox.linear_project_id) {
+        try {
+          // Fetch the project to get team_id (can't rely on activeProjects being loaded)
+          const project = await commands.getLinearProjectById(timebox.linear_project_id);
+          if (project) {
+            const integration = await commands.getIntegrationByType('linear');
+            if (integration) {
+              const config = integration.connection_config as unknown as LinearConfig;
+              const states = await commands.getLinearTeamStates(config.api_key, project.linear_team_id);
+              const inProgressState = states.find(s => s.state_type === 'started');
+              if (inProgressState) {
+                await commands.updateLinearIssueState(config.api_key, timebox.linear_issue_id, inProgressState.id);
+              }
+            }
+          }
+        } catch (syncError) {
+          console.error('Failed to sync Linear issue status:', syncError);
+          // Don't fail the start operation
+        }
+      }
+
       onUpdate();
     } catch (error) {
       console.error('Failed to start timebox:', error);
@@ -147,6 +197,54 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
       return `${Math.round(minutes * 60)}s`;
     }
     return `${minutes.toFixed(1)} min`;
+  };
+
+  const handleSelectProject = async (projectId: number | null) => {
+    try {
+      await commands.setTimeboxLinearProject(timebox.id, projectId);
+      setIsProjectDropdownOpen(false);
+      onUpdate();
+    } catch (error) {
+      console.error('Failed to set project:', error);
+    }
+  };
+
+  const handleCreateIssue = async () => {
+    if (!currentProject) return;
+
+    setIsCreatingIssue(true);
+    try {
+      const integration = await commands.getIntegrationByType('linear');
+      if (!integration) {
+        console.error('No Linear integration configured');
+        return;
+      }
+
+      const config = integration.connection_config as unknown as LinearConfig;
+      const result = await commands.createLinearIssue(config.api_key, {
+        title: timebox.intention,
+        description: timebox.notes || undefined,
+        project_id: currentProject.linear_project_id,
+        team_id: currentProject.linear_team_id,
+      });
+
+      if (result.success && result.issue) {
+        await commands.setTimeboxLinearIssue(timebox.id, result.issue.id, result.issue.url);
+        onUpdate();
+      } else if (result.error) {
+        console.error('Failed to create Linear issue:', result.error);
+      }
+    } catch (error) {
+      console.error('Failed to create Linear issue:', error);
+    } finally {
+      setIsCreatingIssue(false);
+    }
+  };
+
+  const handleOpenIssue = () => {
+    if (timebox.linear_issue_url) {
+      openUrl(timebox.linear_issue_url);
+    }
   };
 
   // Render archived card (read-only with unarchive option)
@@ -283,6 +381,86 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
           />
         </div>
 
+        {/* Linear Project Section */}
+        {activeProjects.length > 0 && (
+          <div className="mb-3 flex items-center gap-2">
+            {/* Project Dropdown */}
+            <div className="relative flex-1" ref={projectDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+                className="w-full flex items-center justify-between px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-sm rounded hover:bg-neutral-800 transition-colors"
+              >
+                <span className={currentProject ? 'text-white' : 'text-neutral-500'}>
+                  {currentProject ? currentProject.name : 'Select project'}
+                </span>
+                <svg
+                  className={`w-3 h-3 text-neutral-400 transition-transform ${isProjectDropdownOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isProjectDropdownOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-[#0a0a0a] border border-neutral-800 rounded-lg shadow-lg max-h-48 overflow-auto">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectProject(null)}
+                    className={`w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-800 transition-colors ${
+                      !timebox.linear_project_id ? 'bg-neutral-800 text-white' : 'text-neutral-400'
+                    }`}
+                  >
+                    No project
+                  </button>
+                  {activeProjects.map((project) => (
+                    <button
+                      key={project.id}
+                      type="button"
+                      onClick={() => handleSelectProject(project.id)}
+                      className={`w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-800 transition-colors ${
+                        timebox.linear_project_id === project.id ? 'bg-[#5E6AD2] text-white' : 'text-neutral-300'
+                      }`}
+                    >
+                      {project.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Create Issue / Issue Link */}
+            {timebox.linear_issue_url ? (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleOpenIssue}
+                  className="px-3 py-1.5 bg-[#5E6AD2]/20 text-[#5E6AD2] text-sm rounded hover:bg-[#5E6AD2]/30 transition-colors flex items-center gap-1"
+                  title="Open in Linear"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  Linear
+                </button>
+                <CopyButton
+                  text={timebox.linear_issue_url}
+                  className="w-7 h-7 bg-[#5E6AD2]/20 text-[#5E6AD2] rounded hover:bg-[#5E6AD2]/30"
+                />
+              </div>
+            ) : currentProject && (
+              <button
+                onClick={handleCreateIssue}
+                disabled={isCreatingIssue}
+                className="px-3 py-1.5 bg-neutral-800 text-neutral-200 text-sm rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Create Linear issue"
+              >
+                {isCreatingIssue ? 'Creating...' : 'Create Issue'}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Duration and actions */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -390,6 +568,25 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
         </div>
 
         <div className="flex items-center gap-2 ml-4">
+          {/* Linear link for in_progress timeboxes */}
+          {timebox.status === 'in_progress' && timebox.linear_issue_url && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleOpenIssue}
+                className="px-2 py-1 bg-[#5E6AD2]/20 text-[#5E6AD2] text-xs rounded hover:bg-[#5E6AD2]/30 transition-colors flex items-center gap-1"
+                title="Open in Linear"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Linear
+              </button>
+              <CopyButton
+                text={timebox.linear_issue_url}
+                className="w-6 h-6 bg-[#5E6AD2]/20 text-[#5E6AD2] rounded hover:bg-[#5E6AD2]/30"
+              />
+            </div>
+          )}
           {(timebox.status === 'completed' || timebox.status === 'cancelled' || timebox.status === 'stopped') && (
             <>
               {timebox.status === 'stopped' && (
@@ -450,10 +647,30 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
         )
       )}
 
-      <p className="text-sm text-neutral-400">
-        Target: {formatDuration(timebox.intended_duration)} | Actual:{' '}
-        {formatDuration(timebox.actual_duration)}
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-neutral-400">
+          Target: {formatDuration(timebox.intended_duration)} | Actual:{' '}
+          {formatDuration(timebox.actual_duration)}
+        </p>
+        {timebox.linear_issue_url && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleOpenIssue}
+              className="px-2 py-1 bg-[#5E6AD2]/20 text-[#5E6AD2] text-xs rounded hover:bg-[#5E6AD2]/30 transition-colors flex items-center gap-1"
+              title="Open in Linear"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Linear
+            </button>
+            <CopyButton
+              text={timebox.linear_issue_url}
+              className="w-6 h-6 bg-[#5E6AD2]/20 text-[#5E6AD2] rounded hover:bg-[#5E6AD2]/30"
+            />
+          </div>
+        )}
+      </div>
       {timebox.sessions.length > 0 && (
         <p className="text-xs text-neutral-500 mt-1">
           {timebox.sessions.length} session{timebox.sessions.length > 1 ? 's' : ''}

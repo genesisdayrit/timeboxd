@@ -12,13 +12,15 @@ use commands::{
     finish_timebox, get_active_session_for_timebox, get_active_timeboxes, get_archived_timeboxes,
     get_sessions_for_timebox, get_timebox_change_log, get_today_timeboxes, pause_timebox,
     reorder_timeboxes, start_timebox, stop_session, stop_timebox, stop_timebox_after_time,
-    unarchive_timebox, update_timebox,
+    unarchive_timebox, update_timebox, set_timebox_linear_issue, set_timebox_linear_project,
     // Integration commands
     create_integration, delete_integration, get_integration_by_type, get_integrations,
     test_linear_connection, test_todoist_connection,
     // Linear project commands
     get_linear_teams, get_linear_team_projects, save_linear_project, toggle_linear_project_active,
-    get_linear_projects, get_active_timebox_projects, archive_linear_project, delete_linear_project,
+    get_linear_projects, get_linear_project_by_id, get_active_timebox_projects, archive_linear_project, delete_linear_project,
+    // Linear issue commands
+    create_linear_issue, get_linear_team_states, update_linear_issue_state,
 };
 use database::initialize_database;
 use state::AppState;
@@ -67,9 +69,16 @@ pub fn run() {
             save_linear_project,
             toggle_linear_project_active,
             get_linear_projects,
+            get_linear_project_by_id,
             get_active_timebox_projects,
             archive_linear_project,
             delete_linear_project,
+            // Linear issue commands
+            create_linear_issue,
+            get_linear_team_states,
+            update_linear_issue_state,
+            set_timebox_linear_issue,
+            set_timebox_linear_project,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
