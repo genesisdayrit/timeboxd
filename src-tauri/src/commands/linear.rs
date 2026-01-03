@@ -216,6 +216,25 @@ pub fn get_linear_projects(state: State<'_, AppState>) -> Result<Vec<LinearProje
     Ok(projects)
 }
 
+// Command: Get a single linear project by its local database ID
+#[tauri::command]
+pub fn get_linear_project_by_id(state: State<'_, AppState>, id: i64) -> Result<Option<LinearProject>, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+
+    let mut stmt = conn
+        .prepare(&format!(
+            "SELECT {} FROM linear_projects WHERE id = ? AND deleted_at IS NULL",
+            LINEAR_PROJECT_SELECT_COLUMNS
+        ))
+        .map_err(|e| e.to_string())?;
+
+    let project = stmt
+        .query_row([id], LinearProject::from_row)
+        .ok();
+
+    Ok(project)
+}
+
 // Command: Get projects where is_active_timebox_project = true
 #[tauri::command]
 pub fn get_active_timebox_projects(state: State<'_, AppState>) -> Result<Vec<LinearProject>, String> {

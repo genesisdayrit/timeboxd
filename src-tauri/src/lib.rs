@@ -18,7 +18,7 @@ use commands::{
     test_linear_connection, test_todoist_connection,
     // Linear project commands
     get_linear_teams, get_linear_team_projects, save_linear_project, toggle_linear_project_active,
-    get_linear_projects, get_active_timebox_projects, archive_linear_project, delete_linear_project,
+    get_linear_projects, get_linear_project_by_id, get_active_timebox_projects, archive_linear_project, delete_linear_project,
     // Linear issue commands
     create_linear_issue, get_linear_team_states, update_linear_issue_state,
 };
@@ -69,6 +69,7 @@ pub fn run() {
             save_linear_project,
             toggle_linear_project_active,
             get_linear_projects,
+            get_linear_project_by_id,
             get_active_timebox_projects,
             archive_linear_project,
             delete_linear_project,

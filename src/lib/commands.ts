@@ -85,6 +85,9 @@ export const commands = {
   getLinearProjects: () =>
     invoke<LinearProject[]>('get_linear_projects'),
 
+  getLinearProjectById: (id: number) =>
+    invoke<LinearProject | null>('get_linear_project_by_id', { id }),
+
   getActiveTimeboxProjects: () =>
     invoke<LinearProject[]>('get_active_timebox_projects'),
 

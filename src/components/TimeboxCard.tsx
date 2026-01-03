@@ -132,15 +132,19 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
       await commands.startTimebox(timebox.id);
 
       // Sync Linear issue status to "In Progress" if issue exists
-      if (timebox.linear_issue_id && currentProject) {
+      if (timebox.linear_issue_id && timebox.linear_project_id) {
         try {
-          const integration = await commands.getIntegrationByType('linear');
-          if (integration) {
-            const config = integration.connection_config as unknown as LinearConfig;
-            const states = await commands.getLinearTeamStates(config.api_key, currentProject.linear_team_id);
-            const inProgressState = states.find(s => s.state_type === 'started');
-            if (inProgressState) {
-              await commands.updateLinearIssueState(config.api_key, timebox.linear_issue_id, inProgressState.id);
+          // Fetch the project to get team_id (can't rely on activeProjects being loaded)
+          const project = await commands.getLinearProjectById(timebox.linear_project_id);
+          if (project) {
+            const integration = await commands.getIntegrationByType('linear');
+            if (integration) {
+              const config = integration.connection_config as unknown as LinearConfig;
+              const states = await commands.getLinearTeamStates(config.api_key, project.linear_team_id);
+              const inProgressState = states.find(s => s.state_type === 'started');
+              if (inProgressState) {
+                await commands.updateLinearIssueState(config.api_key, timebox.linear_issue_id, inProgressState.id);
+              }
             }
           }
         } catch (syncError) {
@@ -428,16 +432,22 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
 
             {/* Create Issue / Issue Link */}
             {timebox.linear_issue_url ? (
-              <button
-                onClick={handleOpenIssue}
-                className="px-3 py-1.5 bg-[#5E6AD2]/20 text-[#5E6AD2] text-sm rounded hover:bg-[#5E6AD2]/30 transition-colors flex items-center gap-1"
-                title="Open in Linear"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                Linear
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleOpenIssue}
+                  className="px-3 py-1.5 bg-[#5E6AD2]/20 text-[#5E6AD2] text-sm rounded hover:bg-[#5E6AD2]/30 transition-colors flex items-center gap-1"
+                  title="Open in Linear"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  Linear
+                </button>
+                <CopyButton
+                  text={timebox.linear_issue_url}
+                  className="w-7 h-7 bg-[#5E6AD2]/20 text-[#5E6AD2] rounded hover:bg-[#5E6AD2]/30"
+                />
+              </div>
             ) : currentProject && (
               <button
                 onClick={handleCreateIssue}
@@ -624,16 +634,22 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
           {formatDuration(timebox.actual_duration)}
         </p>
         {timebox.linear_issue_url && (
-          <button
-            onClick={handleOpenIssue}
-            className="px-2 py-1 bg-[#5E6AD2]/20 text-[#5E6AD2] text-xs rounded hover:bg-[#5E6AD2]/30 transition-colors flex items-center gap-1"
-            title="Open in Linear"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            Linear
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleOpenIssue}
+              className="px-2 py-1 bg-[#5E6AD2]/20 text-[#5E6AD2] text-xs rounded hover:bg-[#5E6AD2]/30 transition-colors flex items-center gap-1"
+              title="Open in Linear"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Linear
+            </button>
+            <CopyButton
+              text={timebox.linear_issue_url}
+              className="w-6 h-6 bg-[#5E6AD2]/20 text-[#5E6AD2] rounded hover:bg-[#5E6AD2]/30"
+            />
+          </div>
         )}
       </div>
       {timebox.sessions.length > 0 && (
