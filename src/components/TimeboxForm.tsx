@@ -206,8 +206,8 @@ export function TimeboxForm({ onCreated, linearProjectId, linearProjectDetails }
         />
       </div>
 
-      {/* Linear Project Dropdown */}
-      {activeProjects.length > 0 && (
+      {/* Linear Project Dropdown - hidden when already in a project context */}
+      {activeProjects.length > 0 && !linearProjectDetails && (
         <div className="mb-4 relative" ref={projectDropdownRef}>
           <button
             type="button"
