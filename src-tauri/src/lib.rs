@@ -19,6 +19,7 @@ use commands::{
     // Linear project commands
     get_linear_teams, get_linear_team_projects, save_linear_project, toggle_linear_project_active,
     get_linear_projects, get_active_timebox_projects, archive_linear_project, delete_linear_project,
+    get_linear_project_issues,
 };
 use database::initialize_database;
 use state::AppState;
@@ -70,6 +71,7 @@ pub fn run() {
             get_active_timebox_projects,
             archive_linear_project,
             delete_linear_project,
+            get_linear_project_issues,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

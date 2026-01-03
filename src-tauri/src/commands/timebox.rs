@@ -5,7 +5,7 @@ use chrono::Local;
 use rusqlite::params;
 use tauri::State;
 
-const TIMEBOX_SELECT_COLUMNS: &str = "id, intention, notes, intended_duration, status, created_at, updated_at, started_at, completed_at, after_time_stopped_at, deleted_at, canceled_at, display_order, archived_at, finished_at";
+const TIMEBOX_SELECT_COLUMNS: &str = "id, intention, notes, intended_duration, status, created_at, updated_at, started_at, completed_at, after_time_stopped_at, deleted_at, canceled_at, display_order, archived_at, finished_at, linear_project_id, linear_issue_id, linear_issue_identifier, linear_issue_url";
 
 #[tauri::command]
 pub fn create_timebox(
@@ -15,8 +15,16 @@ pub fn create_timebox(
     let conn = state.db.lock().map_err(|e| e.to_string())?;
 
     conn.execute(
-        "INSERT INTO timeboxes (intention, intended_duration, notes) VALUES (?1, ?2, ?3)",
-        params![request.intention, request.intended_duration, request.notes],
+        "INSERT INTO timeboxes (intention, intended_duration, notes, linear_project_id, linear_issue_id, linear_issue_identifier, linear_issue_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![
+            request.intention,
+            request.intended_duration,
+            request.notes,
+            request.linear_project_id,
+            request.linear_issue_id,
+            request.linear_issue_identifier,
+            request.linear_issue_url
+        ],
     )
     .map_err(|e| e.to_string())?;
 

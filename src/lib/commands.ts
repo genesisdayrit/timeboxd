@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest, Integration, CreateIntegrationRequest, LinearTestResult, TodoistTestResult, LinearTeam, LinearApiProject, LinearProject, SaveLinearProjectRequest } from './types';
+import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest, Integration, CreateIntegrationRequest, LinearTestResult, TodoistTestResult, LinearTeam, LinearApiProject, LinearProject, SaveLinearProjectRequest, LinearApiIssue } from './types';
 
 export const commands = {
   createTimebox: (request: CreateTimeboxRequest) =>
@@ -93,4 +93,7 @@ export const commands = {
 
   deleteLinearProject: (linearProjectId: string) =>
     invoke<void>('delete_linear_project', { linearProjectId }),
+
+  getLinearProjectIssues: (apiKey: string, projectId: string) =>
+    invoke<LinearApiIssue[]>('get_linear_project_issues', { apiKey, projectId }),
 };

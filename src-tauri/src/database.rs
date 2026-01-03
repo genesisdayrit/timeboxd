@@ -159,5 +159,18 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
         )?;
     }
 
+    // Migration 8: Add linear issue fields to timeboxes for linking timeboxes to Linear issues
+    if version < 8 {
+        conn.execute_batch(r#"
+            ALTER TABLE timeboxes ADD COLUMN linear_issue_id TEXT;
+            ALTER TABLE timeboxes ADD COLUMN linear_issue_identifier TEXT;
+            ALTER TABLE timeboxes ADD COLUMN linear_issue_url TEXT;
+
+            CREATE INDEX IF NOT EXISTS idx_timeboxes_linear_issue_id ON timeboxes(linear_issue_id);
+
+            PRAGMA user_version = 8;
+        "#)?;
+    }
+
     Ok(())
 }

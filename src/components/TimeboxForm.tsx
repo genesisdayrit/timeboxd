@@ -4,11 +4,12 @@ import { MarkdownEditor } from './MarkdownEditor';
 
 interface TimeboxFormProps {
   onCreated: () => void;
+  linearProjectId?: number;
 }
 
 const PRESET_DURATIONS = [5, 15, 45];
 
-export function TimeboxForm({ onCreated }: TimeboxFormProps) {
+export function TimeboxForm({ onCreated, linearProjectId }: TimeboxFormProps) {
   const [intention, setIntention] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
@@ -54,6 +55,7 @@ export function TimeboxForm({ onCreated }: TimeboxFormProps) {
         intention: intention.trim(),
         intended_duration: selectedDuration,
         notes: notes.trim() || undefined,
+        linear_project_id: linearProjectId,
       });
       setIntention('');
       setNotes('');

@@ -16,6 +16,10 @@ export interface Timebox {
   display_order?: number;
   archived_at?: string;
   finished_at?: string;
+  linear_project_id?: number;
+  linear_issue_id?: string;
+  linear_issue_identifier?: string;
+  linear_issue_url?: string;
 }
 
 export interface ReorderTimeboxRequest {
@@ -40,6 +44,10 @@ export interface CreateTimeboxRequest {
   intention: string;
   intended_duration: number;
   notes?: string;
+  linear_project_id?: number;
+  linear_issue_id?: string;
+  linear_issue_identifier?: string;
+  linear_issue_url?: string;
 }
 
 export interface UpdateTimeboxRequest {
@@ -115,4 +123,39 @@ export interface SaveLinearProjectRequest {
   name: string;
   description?: string;
   state?: string;
+}
+
+// Linear Issue types for project issues view
+export interface LinearWorkflowState {
+  id: string;
+  name: string;
+  color: string;
+  state_type: string; // "backlog" | "unstarted" | "started" | "completed" | "canceled"
+}
+
+export interface LinearUser {
+  id: string;
+  name: string;
+  email: string | null;
+}
+
+export interface LinearLabel {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface LinearApiIssue {
+  id: string;
+  identifier: string; // e.g., "ENG-123"
+  title: string;
+  description: string | null;
+  url: string;
+  priority: number | null; // 0-4 (0=No priority, 1=Urgent, 2=High, 3=Normal, 4=Low)
+  priority_label: string | null;
+  due_date: string | null;
+  estimate: number | null;
+  state: LinearWorkflowState | null;
+  assignee: LinearUser | null;
+  labels: { nodes: LinearLabel[] } | null;
 }
