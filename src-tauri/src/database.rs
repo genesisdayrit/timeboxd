@@ -172,5 +172,23 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
         "#)?;
     }
 
+    // Migration 9: Add linear_issue_identifier column if missing
+    // This handles databases that ran main's migration 8 (which only had linear_issue_id and linear_issue_url)
+    if version < 9 {
+        // Check if column already exists (from full migration 8)
+        let has_identifier: bool = conn
+            .prepare("SELECT 1 FROM pragma_table_info('timeboxes') WHERE name = 'linear_issue_identifier'")?
+            .exists([])?;
+
+        if !has_identifier {
+            conn.execute(
+                "ALTER TABLE timeboxes ADD COLUMN linear_issue_identifier TEXT",
+                [],
+            )?;
+        }
+
+        conn.execute("PRAGMA user_version = 9", [])?;
+    }
+
     Ok(())
 }
