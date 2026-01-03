@@ -623,3 +623,58 @@ pub fn get_archived_timeboxes(state: State<'_, AppState>) -> Result<Vec<TimeboxW
 
     Ok(result)
 }
+
+// Command: Set Linear issue on a timebox
+#[tauri::command]
+pub fn set_timebox_linear_issue(
+    state: State<'_, AppState>,
+    timebox_id: i64,
+    linear_issue_id: String,
+    linear_issue_url: String,
+) -> Result<Timebox, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    conn.execute(
+        "UPDATE timeboxes SET linear_issue_id = ?1, linear_issue_url = ?2, updated_at = ?3 WHERE id = ?4",
+        params![linear_issue_id, linear_issue_url, now, timebox_id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    let mut stmt = conn
+        .prepare(&format!("SELECT {} FROM timeboxes WHERE id = ?1", TIMEBOX_SELECT_COLUMNS))
+        .map_err(|e| e.to_string())?;
+
+    let timebox = stmt
+        .query_row(params![timebox_id], Timebox::from_row)
+        .map_err(|e| e.to_string())?;
+
+    Ok(timebox)
+}
+
+// Command: Set Linear project on a timebox
+#[tauri::command]
+pub fn set_timebox_linear_project(
+    state: State<'_, AppState>,
+    timebox_id: i64,
+    linear_project_id: Option<i64>,
+) -> Result<Timebox, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    conn.execute(
+        "UPDATE timeboxes SET linear_project_id = ?1, updated_at = ?2 WHERE id = ?3",
+        params![linear_project_id, now, timebox_id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    let mut stmt = conn
+        .prepare(&format!("SELECT {} FROM timeboxes WHERE id = ?1", TIMEBOX_SELECT_COLUMNS))
+        .map_err(|e| e.to_string())?;
+
+    let timebox = stmt
+        .query_row(params![timebox_id], Timebox::from_row)
+        .map_err(|e| e.to_string())?;
+
+    Ok(timebox)
+}

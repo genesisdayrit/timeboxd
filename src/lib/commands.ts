@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest, Integration, CreateIntegrationRequest, LinearTestResult, TodoistTestResult, LinearTeam, LinearApiProject, LinearProject, SaveLinearProjectRequest, LinearApiIssue } from './types';
+import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest, Integration, CreateIntegrationRequest, LinearTestResult, TodoistTestResult, LinearTeam, LinearApiProject, LinearProject, SaveLinearProjectRequest, LinearApiIssue, CreateLinearIssueRequest, CreateLinearIssueResult, LinearTeamWorkflowState } from './types';
 
 export const commands = {
   createTimebox: (request: CreateTimeboxRequest) =>
@@ -85,6 +85,9 @@ export const commands = {
   getLinearProjects: () =>
     invoke<LinearProject[]>('get_linear_projects'),
 
+  getLinearProjectById: (id: number) =>
+    invoke<LinearProject | null>('get_linear_project_by_id', { id }),
+
   getActiveTimeboxProjects: () =>
     invoke<LinearProject[]>('get_active_timebox_projects'),
 
@@ -94,6 +97,22 @@ export const commands = {
   deleteLinearProject: (linearProjectId: string) =>
     invoke<void>('delete_linear_project', { linearProjectId }),
 
+  // Linear issue commands
+  createLinearIssue: (apiKey: string, request: CreateLinearIssueRequest) =>
+    invoke<CreateLinearIssueResult>('create_linear_issue', { apiKey, request }),
+
+  getLinearTeamStates: (apiKey: string, teamId: string) =>
+    invoke<LinearTeamWorkflowState[]>('get_linear_team_states', { apiKey, teamId }),
+
+  updateLinearIssueState: (apiKey: string, issueId: string, stateId: string) =>
+    invoke<boolean>('update_linear_issue_state', { apiKey, issueId, stateId }),
+
   getLinearProjectIssues: (apiKey: string, projectId: string) =>
     invoke<LinearApiIssue[]>('get_linear_project_issues', { apiKey, projectId }),
+
+  setTimeboxLinearIssue: (timeboxId: number, linearIssueId: string, linearIssueUrl: string) =>
+    invoke<Timebox>('set_timebox_linear_issue', { timeboxId, linearIssueId, linearIssueUrl }),
+
+  setTimeboxLinearProject: (timeboxId: number, linearProjectId: number | null) =>
+    invoke<Timebox>('set_timebox_linear_project', { timeboxId, linearProjectId }),
 };

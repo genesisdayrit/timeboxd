@@ -125,6 +125,34 @@ export interface SaveLinearProjectRequest {
   state?: string;
 }
 
+// Linear Issue types
+export interface LinearIssue {
+  id: string;
+  identifier: string;
+  url: string;
+  title: string;
+}
+
+export interface CreateLinearIssueRequest {
+  title: string;
+  description?: string;
+  project_id: string;
+  team_id: string;
+}
+
+export interface CreateLinearIssueResult {
+  success: boolean;
+  issue?: LinearIssue;
+  error?: string;
+}
+
+// LinearTeamWorkflowState is used for fetching team workflow states (without color)
+export interface LinearTeamWorkflowState {
+  id: string;
+  name: string;
+  state_type: string;
+}
+
 // Linear Issue types for project issues view
 export interface LinearWorkflowState {
   id: string;
