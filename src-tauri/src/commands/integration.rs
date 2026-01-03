@@ -53,6 +53,18 @@ struct TodoistUser {
     full_name: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct TodoistTask {
+    pub id: String,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct TodoistTaskResult {
+    pub success: bool,
+    pub task_id: Option<String>,
+    pub error: Option<String>,
+}
+
 #[tauri::command]
 pub fn test_linear_connection(api_key: String) -> Result<LinearTestResult, String> {
     let client = reqwest::blocking::Client::new();
@@ -138,6 +150,109 @@ pub fn test_todoist_connection(api_token: String) -> Result<TodoistTestResult, S
         success: true,
         user_name: Some(user.full_name),
         error: None,
+    })
+}
+
+/// Creates a task in Todoist with today's due date
+pub fn create_todoist_task(api_token: &str, content: &str, description: Option<&str>) -> Result<TodoistTaskResult, String> {
+    let client = reqwest::blocking::Client::new();
+
+    let today = Local::now().format("%Y-%m-%d").to_string();
+
+    let mut body = serde_json::json!({
+        "content": content,
+        "due_date": today
+    });
+
+    if let Some(desc) = description {
+        body["description"] = serde_json::Value::String(desc.to_string());
+    }
+
+    let response = client
+        .post("https://api.todoist.com/rest/v2/tasks")
+        .header("Authorization", format!("Bearer {}", api_token))
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .send()
+        .map_err(|e| format!("Failed to create Todoist task: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let error_text = response.text().unwrap_or_default();
+        return Ok(TodoistTaskResult {
+            success: false,
+            task_id: None,
+            error: Some(format!("Todoist API returned status {}: {}", status, error_text)),
+        });
+    }
+
+    let task: TodoistTask = response
+        .json()
+        .map_err(|e| format!("Failed to parse Todoist response: {}", e))?;
+
+    Ok(TodoistTaskResult {
+        success: true,
+        task_id: Some(task.id),
+        error: None,
+    })
+}
+
+/// Marks a Todoist task as completed
+pub fn complete_todoist_task(api_token: &str, task_id: &str) -> Result<bool, String> {
+    let client = reqwest::blocking::Client::new();
+
+    let response = client
+        .post(format!("https://api.todoist.com/rest/v2/tasks/{}/close", task_id))
+        .header("Authorization", format!("Bearer {}", api_token))
+        .send()
+        .map_err(|e| format!("Failed to complete Todoist task: {}", e))?;
+
+    Ok(response.status().is_success())
+}
+
+/// Creates a task in Todoist and immediately marks it as completed.
+/// This is used when finishing a timebox to record it as a completed task.
+pub fn create_completed_todoist_task(api_token: &str, content: &str, description: Option<&str>) -> Result<TodoistTaskResult, String> {
+    // First create the task
+    let create_result = create_todoist_task(api_token, content, description)?;
+
+    if !create_result.success {
+        return Ok(create_result);
+    }
+
+    // Then mark it as completed
+    if let Some(ref task_id) = create_result.task_id {
+        let completed = complete_todoist_task(api_token, task_id)?;
+        if !completed {
+            return Ok(TodoistTaskResult {
+                success: false,
+                task_id: create_result.task_id,
+                error: Some("Task created but failed to mark as completed".to_string()),
+            });
+        }
+    }
+
+    Ok(create_result)
+}
+
+/// Gets the Todoist API token from the database if a Todoist integration exists
+pub fn get_todoist_api_token(conn: &rusqlite::Connection) -> Option<String> {
+    let mut stmt = conn
+        .prepare(&format!(
+            "SELECT {} FROM integrations WHERE integration_type = 'todoist' LIMIT 1",
+            INTEGRATION_SELECT_COLUMNS
+        ))
+        .ok()?;
+
+    let integration: Option<Integration> = stmt
+        .query_row([], Integration::from_row)
+        .optional()
+        .ok()?;
+
+    integration.and_then(|i| {
+        i.connection_config.get("api_token")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
     })
 }
 

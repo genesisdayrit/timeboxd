@@ -1,3 +1,4 @@
+use crate::commands::integration::{create_completed_todoist_task, get_todoist_api_token};
 use crate::models::{CreateTimeboxRequest, Session, Timebox, TimeboxChangeLog, TimeboxStatus, UpdateTimeboxRequest};
 use crate::state::AppState;
 use chrono::Local;
@@ -202,6 +203,15 @@ pub fn finish_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, St
     let timebox = stmt
         .query_row(params![id], Timebox::from_row)
         .map_err(|e| e.to_string())?;
+
+    // If Todoist integration exists, create a completed task
+    if let Some(api_token) = get_todoist_api_token(&conn) {
+        let description = timebox.notes.as_deref();
+        // Silently log any errors but don't fail the timebox completion
+        if let Err(e) = create_completed_todoist_task(&api_token, &timebox.intention, description) {
+            eprintln!("Failed to create Todoist task: {}", e);
+        }
+    }
 
     Ok(timebox)
 }
