@@ -7,6 +7,7 @@ interface IssueCardProps {
   localProjectId?: number;
   isAlreadyAdded?: boolean;
   onTimeboxCreated?: () => void;
+  onNavigateToTimebox?: (issueId: string) => void;
 }
 
 const PRESET_DURATIONS = [15, 30, 45]; // in minutes
@@ -26,7 +27,7 @@ function getPriorityColor(priority: number | null): string {
   }
 }
 
-export function IssueCard({ issue, localProjectId, isAlreadyAdded, onTimeboxCreated }: IssueCardProps) {
+export function IssueCard({ issue, localProjectId, isAlreadyAdded, onTimeboxCreated, onNavigateToTimebox }: IssueCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [customDuration, setCustomDuration] = useState('');
@@ -156,12 +157,16 @@ export function IssueCard({ issue, localProjectId, isAlreadyAdded, onTimeboxCrea
 
         {/* Add Timebox button or Already added indicator */}
         {isAlreadyAdded ? (
-          <span className="px-3 py-1.5 text-sm text-neutral-500 flex items-center gap-1.5 flex-shrink-0">
+          <button
+            onClick={() => onNavigateToTimebox?.(issue.id)}
+            className="px-3 py-1.5 text-sm text-[#5E6AD2] hover:text-[#a5b4fc] flex items-center gap-1.5 flex-shrink-0 transition-colors"
+            title="View timebox"
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
             Added
-          </span>
+          </button>
         ) : (
           <button
             onClick={() => setIsExpanded(!isExpanded)}

@@ -15,6 +15,7 @@ function App() {
   const [activeTimeboxes, setActiveTimeboxes] = useState<TimeboxWithSessions[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLinearConnected, setIsLinearConnected] = useState(false);
+  const [highlightedIssueId, setHighlightedIssueId] = useState<string | null>(null);
 
   const checkLinearConnection = useCallback(async () => {
     try {
@@ -45,6 +46,13 @@ function App() {
 
   const { getTimer, formatTime } = useTimers(activeTimeboxes, refreshData);
 
+  const handleNavigateToTimebox = useCallback((issueId: string) => {
+    setHighlightedIssueId(issueId);
+    setCurrentPage('sessions');
+    // Clear highlight after animation
+    setTimeout(() => setHighlightedIssueId(null), 2000);
+  }, []);
+
   useEffect(() => {
     refreshData();
     checkLinearConnection();
@@ -70,10 +78,11 @@ function App() {
             getTimer={getTimer}
             formatTime={formatTime}
             onUpdate={refreshData}
+            highlightedIssueId={highlightedIssueId}
           />
         )}
         {currentPage === 'integrations' && <IntegrationsPage onLinearConnectionChange={checkLinearConnection} />}
-        {currentPage === 'linear' && <LinearPage onTimeboxCreated={refreshData} />}
+        {currentPage === 'linear' && <LinearPage onTimeboxCreated={refreshData} onNavigateToTimebox={handleNavigateToTimebox} />}
       </main>
     </div>
   );

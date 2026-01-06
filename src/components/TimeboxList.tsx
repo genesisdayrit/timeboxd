@@ -24,9 +24,10 @@ interface TimeboxListProps {
   archivedTimeboxes: TimeboxWithSessions[];
   onUpdate: () => void;
   showCompleted: boolean;
+  highlightedIssueId?: string | null;
 }
 
-export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showCompleted }: TimeboxListProps) {
+export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showCompleted, highlightedIssueId }: TimeboxListProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const sensors = useSensors(
@@ -115,6 +116,7 @@ export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showComple
                     timebox={timebox}
                     onUpdate={onUpdate}
                     isDragging={isDragging}
+                    isHighlighted={highlightedIssueId === timebox.linear_issue_id}
                   />
                 ))}
               </div>
@@ -128,7 +130,7 @@ export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showComple
           <h2 className="text-lg font-semibold text-neutral-300 mb-3">Paused</h2>
           <div className="space-y-2">
             {paused.map((timebox) => (
-              <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} />
+              <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} isHighlighted={highlightedIssueId === timebox.linear_issue_id} />
             ))}
           </div>
         </div>
@@ -139,7 +141,7 @@ export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showComple
           <h2 className="text-lg font-semibold text-neutral-300 mb-3">Cancelled</h2>
           <div className="space-y-2">
             {cancelled.map((timebox) => (
-              <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} />
+              <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} isHighlighted={highlightedIssueId === timebox.linear_issue_id} />
             ))}
           </div>
         </div>
@@ -150,7 +152,7 @@ export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showComple
           <h2 className="text-lg font-semibold text-neutral-300 mb-3">Stopped</h2>
           <div className="space-y-2">
             {stoppedTimeboxes.map((timebox) => (
-              <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} />
+              <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} isHighlighted={highlightedIssueId === timebox.linear_issue_id} />
             ))}
           </div>
         </div>
@@ -161,7 +163,7 @@ export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showComple
           <h2 className="text-lg font-semibold text-neutral-300 mb-3">Completed</h2>
           <div className="space-y-2">
             {completedTimeboxes.map((timebox) => (
-              <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} />
+              <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} isHighlighted={highlightedIssueId === timebox.linear_issue_id} />
             ))}
           </div>
         </div>
@@ -172,7 +174,7 @@ export function TimeboxList({ timeboxes, archivedTimeboxes, onUpdate, showComple
           <h2 className="text-lg font-semibold text-neutral-300 mb-3">Archived</h2>
           <div className="space-y-2">
             {archivedTimeboxes.map((timebox) => (
-              <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} isArchived />
+              <TimeboxCard key={timebox.id} timebox={timebox} onUpdate={onUpdate} isArchived isHighlighted={highlightedIssueId === timebox.linear_issue_id} />
             ))}
           </div>
         </div>

@@ -11,6 +11,7 @@ interface SessionsPageProps {
   getTimer: (id: number) => { remainingSeconds: number; isExpired: boolean } | undefined;
   formatTime: (seconds: number) => string;
   onUpdate: () => void;
+  highlightedIssueId?: string | null;
 }
 
 export function SessionsPage({
@@ -20,6 +21,7 @@ export function SessionsPage({
   getTimer,
   formatTime,
   onUpdate,
+  highlightedIssueId,
 }: SessionsPageProps) {
   const [showCompleted, setShowCompleted] = useState(false);
 
@@ -43,6 +45,7 @@ export function SessionsPage({
           getTimer={getTimer}
           formatTime={formatTime}
           onUpdate={onUpdate}
+          highlightedIssueId={highlightedIssueId}
         />
 
         <TimeboxList
@@ -50,6 +53,7 @@ export function SessionsPage({
           archivedTimeboxes={archivedTimeboxes}
           onUpdate={onUpdate}
           showCompleted={showCompleted}
+          highlightedIssueId={highlightedIssueId}
         />
       </div>
     </div>

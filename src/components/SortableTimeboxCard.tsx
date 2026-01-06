@@ -7,9 +7,10 @@ interface SortableTimeboxCardProps {
   timebox: TimeboxWithSessions;
   onUpdate: () => void;
   isDragging?: boolean;
+  isHighlighted?: boolean;
 }
 
-export function SortableTimeboxCard({ timebox, onUpdate }: SortableTimeboxCardProps) {
+export function SortableTimeboxCard({ timebox, onUpdate, isHighlighted }: SortableTimeboxCardProps) {
   const {
     attributes,
     listeners,
@@ -32,6 +33,7 @@ export function SortableTimeboxCard({ timebox, onUpdate }: SortableTimeboxCardPr
         onUpdate={onUpdate}
         showDragHandle
         dragHandleProps={listeners}
+        isHighlighted={isHighlighted}
       />
     </div>
   );
