@@ -11,6 +11,7 @@ interface TimeboxCardProps {
   showDragHandle?: boolean;
   isArchived?: boolean;
   dragHandleProps?: Record<string, unknown>;
+  isHighlighted?: boolean;
 }
 
 const statusColors: Record<string, string> = {
@@ -31,7 +32,7 @@ const statusLabels: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
-export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dragHandleProps }: TimeboxCardProps) {
+export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dragHandleProps, isHighlighted }: TimeboxCardProps) {
   // Fully editable when not_started or paused (can edit duration)
   const isFullyEditable = timebox.status === 'not_started' || timebox.status === 'paused';
   // Completed timeboxes can edit intention and notes only
@@ -55,6 +56,14 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [isCreatingIssue, setIsCreatingIssue] = useState(false);
   const projectDropdownRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Scroll into view when highlighted
+  useEffect(() => {
+    if (isHighlighted && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isHighlighted]);
 
   // Load active projects for dropdown
   useEffect(() => {
@@ -250,7 +259,12 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
   // Render archived card (read-only with unarchive option)
   if (isArchived) {
     return (
-      <div className="bg-[#0a0a0a]/50 border border-neutral-800/50 rounded-lg p-4 opacity-75">
+      <div
+        ref={cardRef}
+        className={`bg-[#0a0a0a]/50 border border-neutral-800/50 rounded-lg p-4 opacity-75 transition-all duration-500 ${
+          isHighlighted ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-black' : ''
+        }`}
+      >
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 flex-1">
             <div className="relative group/title flex-1">
@@ -305,7 +319,12 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
   // Render fully editable card for not_started or paused
   if (isFullyEditable) {
     return (
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4">
+      <div
+        ref={cardRef}
+        className={`bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4 transition-all duration-500 ${
+          isHighlighted ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-black' : ''
+        }`}
+      >
         {/* Header with drag handle, intention and status */}
         <div className="flex items-center gap-2 mb-2">
           {showDragHandle && (
@@ -528,7 +547,12 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
   // Render card for in_progress, completed, cancelled, stopped
   // Completed/stopped are editable (intention and notes), in_progress and cancelled are read-only
   return (
-    <div className="bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4">
+    <div
+      ref={cardRef}
+      className={`bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4 transition-all duration-500 ${
+        isHighlighted ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-black' : ''
+      }`}
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 flex-1">
           {isCompletedEditable && isEditingIntention ? (
