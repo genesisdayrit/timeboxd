@@ -3,7 +3,7 @@ import type { TimeboxWithSessions, LinearProject, LinearConfig } from '../lib/ty
 import { commands } from '../lib/commands';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CopyButton } from './CopyButton';
-import { openUrl } from '@tauri-apps/plugin-opener';
+import { openLinearUrl } from '../lib/utils';
 
 interface TimeboxCardProps {
   timebox: TimeboxWithSessions;
@@ -55,6 +55,7 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
   const [activeProjects, setActiveProjects] = useState<LinearProject[]>([]);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [isCreatingIssue, setIsCreatingIssue] = useState(false);
+  const [linearOpenInNativeApp, setLinearOpenInNativeApp] = useState(false);
   const projectDropdownRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -71,6 +72,16 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
       commands.getActiveTimeboxProjects().then(setActiveProjects).catch(console.error);
     }
   }, [isFullyEditable, isArchived]);
+
+  // Load Linear native app setting
+  useEffect(() => {
+    commands.getIntegrationByType('linear').then(integration => {
+      if (integration) {
+        const config = integration.connection_config as unknown as LinearConfig;
+        setLinearOpenInNativeApp(config.open_in_native_app ?? false);
+      }
+    }).catch(console.error);
+  }, []);
 
   // Handle click outside to close project dropdown
   useEffect(() => {
@@ -252,7 +263,7 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
 
   const handleOpenIssue = () => {
     if (timebox.linear_issue_url) {
-      openUrl(timebox.linear_issue_url);
+      openLinearUrl(timebox.linear_issue_url, linearOpenInNativeApp);
     }
   };
 
