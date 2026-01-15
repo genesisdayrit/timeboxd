@@ -11,6 +11,7 @@ interface ActiveTimeboxesProps {
   getTimer: (id: number) => { remainingSeconds: number; isExpired: boolean } | undefined;
   formatTime: (seconds: number) => string;
   onUpdate: () => void;
+  highlightedIssueId?: string | null;
 }
 
 interface ActiveTimeboxCardProps {
@@ -21,6 +22,7 @@ interface ActiveTimeboxCardProps {
   onFinish: () => void;
   onCancel: () => void;
   onUpdate: () => void;
+  isHighlighted?: boolean;
 }
 
 function ActiveTimeboxCard({
@@ -31,6 +33,7 @@ function ActiveTimeboxCard({
   onFinish,
   onCancel,
   onUpdate,
+  isHighlighted,
 }: ActiveTimeboxCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditingIntention, setIsEditingIntention] = useState(false);
@@ -39,6 +42,14 @@ function ActiveTimeboxCard({
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intentionInputRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Scroll into view when highlighted
+  useEffect(() => {
+    if (isHighlighted && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isHighlighted]);
 
   const hasChanges =
     intention !== timebox.intention || notes !== (timebox.notes ?? '');
@@ -85,7 +96,12 @@ function ActiveTimeboxCard({
   }, [isEditingIntention]);
 
   return (
-    <div className="bg-[#5E6AD2]/20 border border-[#5E6AD2] rounded-lg p-4">
+    <div
+      ref={cardRef}
+      className={`bg-[#5E6AD2]/20 border border-[#5E6AD2] rounded-lg p-4 transition-all duration-500 ${
+        isHighlighted ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-black' : ''
+      }`}
+    >
       {/* Header row with intention and Linear link */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex-1 flex items-center gap-2 min-w-0">
@@ -214,6 +230,7 @@ export function ActiveTimeboxes({
   getTimer,
   formatTime,
   onUpdate,
+  highlightedIssueId,
 }: ActiveTimeboxesProps) {
   if (timeboxes.length === 0) return null;
 
@@ -258,6 +275,7 @@ export function ActiveTimeboxes({
             onFinish={() => handleFinish(timebox.id)}
             onCancel={() => handleCancel(timebox.id)}
             onUpdate={onUpdate}
+            isHighlighted={highlightedIssueId === timebox.linear_issue_id}
           />
         ))}
       </div>

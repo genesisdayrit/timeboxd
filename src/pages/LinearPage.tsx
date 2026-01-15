@@ -12,9 +12,10 @@ interface SelectedProject {
 
 interface LinearPageProps {
   onTimeboxCreated?: () => void;
+  onNavigateToTimebox?: (issueId: string) => void;
 }
 
-export function LinearPage({ onTimeboxCreated }: LinearPageProps) {
+export function LinearPage({ onTimeboxCreated, onNavigateToTimebox }: LinearPageProps) {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [teams, setTeams] = useState<LinearTeam[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
@@ -174,6 +175,7 @@ export function LinearPage({ onTimeboxCreated }: LinearPageProps) {
         teamId={selectedProject.teamId}
         onBack={() => setSelectedProject(null)}
         onTimeboxCreated={onTimeboxCreated}
+        onNavigateToTimebox={onNavigateToTimebox}
       />
     );
   }

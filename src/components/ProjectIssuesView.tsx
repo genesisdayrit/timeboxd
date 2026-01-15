@@ -12,6 +12,7 @@ interface ProjectIssuesViewProps {
   teamId: string;
   onBack: () => void;
   onTimeboxCreated?: () => void;
+  onNavigateToTimebox?: (issueId: string) => void;
 }
 
 type StateType = 'unstarted' | 'started' | 'backlog' | 'completed' | 'canceled';
@@ -55,6 +56,7 @@ export function ProjectIssuesView({
   teamId,
   onBack,
   onTimeboxCreated,
+  onNavigateToTimebox,
 }: ProjectIssuesViewProps) {
   const [issues, setIssues] = useState<LinearApiIssue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -183,6 +185,7 @@ export function ProjectIssuesView({
                       localProjectId={localProjectId}
                       isAlreadyAdded={existingIssueIds.has(issue.id)}
                       onTimeboxCreated={handleTimeboxCreated}
+                      onNavigateToTimebox={onNavigateToTimebox}
                     />
                   ))}
                 </div>
