@@ -76,6 +76,7 @@ export interface CreateIntegrationRequest {
 
 export interface LinearConfig {
   api_key: string;
+  open_in_native_app?: boolean;
 }
 
 export interface LinearTestResult {

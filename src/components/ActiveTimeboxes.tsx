@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import type { TimeboxWithSessions } from '../lib/types';
+import type { TimeboxWithSessions, LinearConfig } from '../lib/types';
 import { commands } from '../lib/commands';
 import { Timer } from './Timer';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CopyButton } from './CopyButton';
-import { openUrl } from '@tauri-apps/plugin-opener';
+import { openLinearUrl } from '../lib/utils';
 
 interface ActiveTimeboxesProps {
   timeboxes: TimeboxWithSessions[];
@@ -39,6 +39,7 @@ function ActiveTimeboxCard({
   const [isEditingIntention, setIsEditingIntention] = useState(false);
   const [intention, setIntention] = useState(timebox.intention);
   const [notes, setNotes] = useState(timebox.notes ?? '');
+  const [linearOpenInNativeApp, setLinearOpenInNativeApp] = useState(false);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intentionInputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +51,16 @@ function ActiveTimeboxCard({
       cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [isHighlighted]);
+
+  // Load Linear native app setting
+  useEffect(() => {
+    commands.getIntegrationByType('linear').then(integration => {
+      if (integration) {
+        const config = integration.connection_config as unknown as LinearConfig;
+        setLinearOpenInNativeApp(config.open_in_native_app ?? false);
+      }
+    }).catch(console.error);
+  }, []);
 
   const hasChanges =
     intention !== timebox.intention || notes !== (timebox.notes ?? '');
@@ -136,7 +147,7 @@ function ActiveTimeboxCard({
         {timebox.linear_issue_url && (
           <div className="flex items-center gap-1 shrink-0 ml-4">
             <button
-              onClick={() => openUrl(timebox.linear_issue_url!)}
+              onClick={() => openLinearUrl(timebox.linear_issue_url!, linearOpenInNativeApp)}
               className="px-2 py-1 bg-[#5E6AD2]/30 text-[#a5b4fc] text-xs rounded hover:bg-[#5E6AD2]/50 transition-colors flex items-center gap-1"
               title="Open in Linear"
             >

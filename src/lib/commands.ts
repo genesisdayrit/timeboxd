@@ -63,6 +63,9 @@ export const commands = {
   deleteIntegration: (id: number) =>
     invoke<void>('delete_integration', { id }),
 
+  updateIntegrationConfig: (id: number, connectionConfig: Record<string, unknown>) =>
+    invoke<Integration>('update_integration_config', { id, connectionConfig }),
+
   testLinearConnection: (apiKey: string) =>
     invoke<LinearTestResult>('test_linear_connection', { apiKey }),
 

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { commands } from '../lib/commands';
-import type { LinearApiIssue } from '../lib/types';
+import type { LinearApiIssue, LinearConfig } from '../lib/types';
+import { openLinearUrl } from '../lib/utils';
 
 interface IssueCardProps {
   issue: LinearApiIssue;
@@ -34,6 +35,17 @@ export function IssueCard({ issue, localProjectId, isAlreadyAdded, onTimeboxCrea
   const [isCustom, setIsCustom] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [linearOpenInNativeApp, setLinearOpenInNativeApp] = useState(false);
+
+  // Load Linear native app setting
+  useEffect(() => {
+    commands.getIntegrationByType('linear').then(integration => {
+      if (integration) {
+        const config = integration.connection_config as unknown as LinearConfig;
+        setLinearOpenInNativeApp(config.open_in_native_app ?? false);
+      }
+    }).catch(console.error);
+  }, []);
 
   const handleAddTimebox = async () => {
     if (selectedDuration === null) return;
@@ -107,15 +119,15 @@ export function IssueCard({ issue, localProjectId, isAlreadyAdded, onTimeboxCrea
         <div className="flex-1 min-w-0">
           {/* Identifier and Priority */}
           <div className="flex items-center gap-2 mb-1">
-            <a
-              href={issue.url}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                openLinearUrl(issue.url, linearOpenInNativeApp);
+              }}
               className="text-neutral-400 text-sm hover:text-[#5E6AD2] transition-colors"
-              onClick={(e) => e.stopPropagation()}
             >
               {issue.identifier}
-            </a>
+            </button>
             {issue.priority_label && (
               <span className={`text-xs ${getPriorityColor(issue.priority)}`}>
                 {issue.priority_label}

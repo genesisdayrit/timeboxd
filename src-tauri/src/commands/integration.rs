@@ -337,3 +337,32 @@ pub fn delete_integration(state: State<'_, AppState>, id: i64) -> Result<(), Str
 
     Ok(())
 }
+
+#[tauri::command]
+pub fn update_integration_config(
+    state: State<'_, AppState>,
+    id: i64,
+    connection_config: serde_json::Value,
+) -> Result<Integration, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    let config_json = serde_json::to_string(&connection_config)
+        .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "UPDATE integrations SET connection_config = ?1, updated_at = ?2 WHERE id = ?3",
+        params![config_json, now, id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    let mut stmt = conn
+        .prepare(&format!("SELECT {} FROM integrations WHERE id = ?1", INTEGRATION_SELECT_COLUMNS))
+        .map_err(|e| e.to_string())?;
+
+    let integration = stmt
+        .query_row(params![id], Integration::from_row)
+        .map_err(|e| e.to_string())?;
+
+    Ok(integration)
+}
