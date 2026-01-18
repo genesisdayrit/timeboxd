@@ -118,6 +118,15 @@ export interface LinearProject {
   deleted_at: string | null;
 }
 
+// Represents a selected Linear project (from API or local DB)
+// Used for issue creation - only needs API-level IDs
+export interface SelectedLinearProject {
+  linearProjectId: string;   // Linear API project ID (required for createLinearIssue)
+  linearTeamId: string;      // Linear API team ID (required)
+  name: string;              // Display name
+  localDbId?: number;        // Optional - present if project is saved locally
+}
+
 export interface SaveLinearProjectRequest {
   linear_project_id: string;
   linear_team_id: string;
