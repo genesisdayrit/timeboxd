@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { TimeboxWithSessions, LinearProject, LinearConfig } from '../lib/types';
 import { commands } from '../lib/commands';
 import { useLinear } from '../contexts/AppContext';
+import { useLinearIssueCreation } from '../hooks/useLinearIssueCreation';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CopyButton } from './CopyButton';
 import { openLinearUrl } from '../lib/utils';
@@ -55,7 +56,6 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
   // Linear project state
   const [activeProjects, setActiveProjects] = useState<LinearProject[]>([]);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
-  const [isCreatingIssue, setIsCreatingIssue] = useState(false);
   const projectDropdownRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -88,6 +88,14 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
   }, []);
 
   const currentProject = activeProjects.find(p => p.id === timebox.linear_project_id);
+
+  // Use the shared hook for issue creation
+  const { isCreatingIssue, createIssue: handleCreateIssue } = useLinearIssueCreation({
+    timebox,
+    currentProject,
+    onSuccess: onUpdate,
+    syncToInProgress: false,
+  });
 
   // Track if we have unsaved changes
   const hasChanges =
@@ -219,38 +227,6 @@ export function TimeboxCard({ timebox, onUpdate, showDragHandle, isArchived, dra
       onUpdate();
     } catch (error) {
       console.error('Failed to set project:', error);
-    }
-  };
-
-  const handleCreateIssue = async () => {
-    if (!currentProject) return;
-
-    setIsCreatingIssue(true);
-    try {
-      const integration = await commands.getIntegrationByType('linear');
-      if (!integration) {
-        console.error('No Linear integration configured');
-        return;
-      }
-
-      const config = integration.connection_config as unknown as LinearConfig;
-      const result = await commands.createLinearIssue(config.api_key, {
-        title: timebox.intention,
-        description: timebox.notes || undefined,
-        project_id: currentProject.linear_project_id,
-        team_id: currentProject.linear_team_id,
-      });
-
-      if (result.success && result.issue) {
-        await commands.setTimeboxLinearIssue(timebox.id, result.issue.id, result.issue.url);
-        onUpdate();
-      } else if (result.error) {
-        console.error('Failed to create Linear issue:', result.error);
-      }
-    } catch (error) {
-      console.error('Failed to create Linear issue:', error);
-    } finally {
-      setIsCreatingIssue(false);
     }
   };
 

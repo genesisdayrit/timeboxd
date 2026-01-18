@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import type { TimeboxWithSessions } from '../lib/types';
+import type { TimeboxWithSessions, LinearProject } from '../lib/types';
 import { commands } from '../lib/commands';
 import { useLinear } from '../contexts/AppContext';
+import { useLinearIssueCreation } from '../hooks/useLinearIssueCreation';
 import { Timer } from './Timer';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CopyButton } from './CopyButton';
@@ -44,9 +45,25 @@ function ActiveTimeboxCard({
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intentionInputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const projectDropdownRef = useRef<HTMLDivElement>(null);
 
   // Get Linear settings from context
   const { openInNativeApp: linearOpenInNativeApp } = useLinear();
+
+  // Linear project state
+  const [activeProjects, setActiveProjects] = useState<LinearProject[]>([]);
+  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
+
+  const hasIssue = !!timebox.linear_issue_url;
+  const currentProject = activeProjects.find(p => p.id === timebox.linear_project_id);
+
+  // Use the shared hook for issue creation
+  const { isCreatingIssue, createIssue } = useLinearIssueCreation({
+    timebox,
+    currentProject,
+    onSuccess: onUpdate,
+    syncToInProgress: true,
+  });
 
   // Scroll into view when highlighted
   useEffect(() => {
@@ -54,6 +71,34 @@ function ActiveTimeboxCard({
       cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [isHighlighted]);
+
+  // Load active projects for dropdown (only when no issue exists)
+  useEffect(() => {
+    if (!hasIssue) {
+      commands.getActiveTimeboxProjects().then(setActiveProjects).catch(console.error);
+    }
+  }, [hasIssue]);
+
+  // Handle click outside to close project dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (projectDropdownRef.current && !projectDropdownRef.current.contains(event.target as Node)) {
+        setIsProjectDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectProject = async (projectId: number | null) => {
+    try {
+      await commands.setTimeboxLinearProject(timebox.id, projectId);
+      setIsProjectDropdownOpen(false);
+      onUpdate();
+    } catch (error) {
+      console.error('Failed to set project:', error);
+    }
+  };
 
   const hasChanges =
     intention !== timebox.intention || notes !== (timebox.notes ?? '');
@@ -208,6 +253,68 @@ function ActiveTimeboxCard({
           </button>
         </div>
       </div>
+
+      {/* Linear project section - visible when no issue exists */}
+      {!hasIssue && activeProjects.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-[#5E6AD2]/50 flex items-center gap-2">
+          {/* Project Dropdown */}
+          <div className="relative flex-1" ref={projectDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+              className="w-full flex items-center justify-between px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-sm rounded hover:bg-neutral-800 transition-colors"
+            >
+              <span className={currentProject ? 'text-white' : 'text-neutral-500'}>
+                {currentProject ? currentProject.name : 'Select Linear project'}
+              </span>
+              <svg
+                className={`w-3 h-3 text-neutral-400 transition-transform ${isProjectDropdownOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isProjectDropdownOpen && (
+              <div className="absolute z-10 w-full mt-1 bg-[#0a0a0a] border border-neutral-800 rounded-lg shadow-lg max-h-48 overflow-auto">
+                <button
+                  type="button"
+                  onClick={() => handleSelectProject(null)}
+                  className={`w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-800 transition-colors ${
+                    !timebox.linear_project_id ? 'bg-neutral-800 text-white' : 'text-neutral-400'
+                  }`}
+                >
+                  No project
+                </button>
+                {activeProjects.map((project) => (
+                  <button
+                    key={project.id}
+                    type="button"
+                    onClick={() => handleSelectProject(project.id)}
+                    className={`w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-800 transition-colors ${
+                      timebox.linear_project_id === project.id ? 'bg-[#5E6AD2] text-white' : 'text-neutral-300'
+                    }`}
+                  >
+                    {project.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Create Issue Button */}
+          {currentProject && (
+            <button
+              onClick={createIssue}
+              disabled={isCreatingIssue}
+              className="px-3 py-1.5 bg-[#5E6AD2] text-white text-sm rounded hover:bg-[#4f5ab8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            >
+              {isCreatingIssue ? 'Creating...' : 'Create Issue'}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Expandable notes section */}
       {isExpanded && (
