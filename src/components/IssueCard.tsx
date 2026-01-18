@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { commands } from '../lib/commands';
-import type { LinearApiIssue, LinearConfig } from '../lib/types';
+import type { LinearApiIssue } from '../lib/types';
+import { useLinear } from '../contexts/AppContext';
 import { openLinearUrl } from '../lib/utils';
 
 interface IssueCardProps {
@@ -35,17 +36,9 @@ export function IssueCard({ issue, localProjectId, isAlreadyAdded, onTimeboxCrea
   const [isCustom, setIsCustom] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [linearOpenInNativeApp, setLinearOpenInNativeApp] = useState(false);
 
-  // Load Linear native app setting
-  useEffect(() => {
-    commands.getIntegrationByType('linear').then(integration => {
-      if (integration) {
-        const config = integration.connection_config as unknown as LinearConfig;
-        setLinearOpenInNativeApp(config.open_in_native_app ?? false);
-      }
-    }).catch(console.error);
-  }, []);
+  // Get Linear settings from context
+  const { openInNativeApp: linearOpenInNativeApp } = useLinear();
 
   const handleAddTimebox = async () => {
     if (selectedDuration === null) return;

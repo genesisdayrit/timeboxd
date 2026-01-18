@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { commands } from '../lib/commands';
 import { LinearConnectionForm } from '../components/LinearConnectionForm';
 import { TodoistConnectionForm } from '../components/TodoistConnectionForm';
-import type { Integration, LinearConfig } from '../lib/types';
+import { useLinear } from '../contexts/AppContext';
+import type { Integration } from '../lib/types';
 
 type View = 'list' | 'connect-linear' | 'connect-todoist' | 'success';
 
@@ -14,19 +15,14 @@ export function IntegrationsPage({ onLinearConnectionChange }: IntegrationsPageP
   const [view, setView] = useState<View>('list');
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [linearOpenInNativeApp, setLinearOpenInNativeApp] = useState(false);
+
+  // Use context for Linear settings - no page reload needed!
+  const { openInNativeApp: linearOpenInNativeApp, updateOpenInNativeApp } = useLinear();
 
   const loadIntegrations = async () => {
     try {
       const data = await commands.getIntegrations();
       setIntegrations(data);
-
-      // Load Linear setting
-      const linearIntegration = data.find(i => i.integration_type === 'linear');
-      if (linearIntegration) {
-        const config = linearIntegration.connection_config as unknown as LinearConfig;
-        setLinearOpenInNativeApp(config.open_in_native_app ?? false);
-      }
     } catch (error) {
       console.error('Failed to load integrations:', error);
     } finally {
@@ -35,20 +31,8 @@ export function IntegrationsPage({ onLinearConnectionChange }: IntegrationsPageP
   };
 
   const handleToggleLinearNativeApp = async () => {
-    const linearIntegration = integrations.find(i => i.integration_type === 'linear');
-    if (!linearIntegration) return;
-
-    const currentConfig = linearIntegration.connection_config as unknown as LinearConfig;
-    const newValue = !linearOpenInNativeApp;
-
     try {
-      await commands.updateIntegrationConfig(linearIntegration.id, {
-        ...currentConfig,
-        open_in_native_app: newValue,
-      });
-      setLinearOpenInNativeApp(newValue);
-      // Reload to ensure all components pick up the new setting
-      window.location.reload();
+      await updateOpenInNativeApp(!linearOpenInNativeApp);
     } catch (error) {
       console.error('Failed to update Linear setting:', error);
     }

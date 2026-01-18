@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import type { TimeboxWithSessions, LinearConfig } from '../lib/types';
+import type { TimeboxWithSessions } from '../lib/types';
 import { commands } from '../lib/commands';
+import { useLinear } from '../contexts/AppContext';
 import { Timer } from './Timer';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CopyButton } from './CopyButton';
@@ -39,11 +40,13 @@ function ActiveTimeboxCard({
   const [isEditingIntention, setIsEditingIntention] = useState(false);
   const [intention, setIntention] = useState(timebox.intention);
   const [notes, setNotes] = useState(timebox.notes ?? '');
-  const [linearOpenInNativeApp, setLinearOpenInNativeApp] = useState(false);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intentionInputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Get Linear settings from context
+  const { openInNativeApp: linearOpenInNativeApp } = useLinear();
 
   // Scroll into view when highlighted
   useEffect(() => {
@@ -51,16 +54,6 @@ function ActiveTimeboxCard({
       cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [isHighlighted]);
-
-  // Load Linear native app setting
-  useEffect(() => {
-    commands.getIntegrationByType('linear').then(integration => {
-      if (integration) {
-        const config = integration.connection_config as unknown as LinearConfig;
-        setLinearOpenInNativeApp(config.open_in_native_app ?? false);
-      }
-    }).catch(console.error);
-  }, []);
 
   const hasChanges =
     intention !== timebox.intention || notes !== (timebox.notes ?? '');
