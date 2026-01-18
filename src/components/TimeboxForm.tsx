@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { commands } from '../lib/commands';
 import { MarkdownEditor } from './MarkdownEditor';
-import type { LinearProject, LinearConfig } from '../lib/types';
+import { LinearProjectPicker } from './LinearProjectPicker';
+import { useLinear } from '../contexts/AppContext';
+import type { LinearProject, LinearConfig, SelectedLinearProject } from '../lib/types';
 
 interface TimeboxFormProps {
   onCreated: () => void;
@@ -23,29 +25,17 @@ export function TimeboxForm({ onCreated, linearProjectId, linearProjectDetails }
   const [isCustom, setIsCustom] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Linear integration
+  const { apiKey: linearApiKey } = useLinear();
+
   // Linear project state
   const [activeProjects, setActiveProjects] = useState<LinearProject[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
-  const projectDropdownRef = useRef<HTMLDivElement>(null);
+  const [selectedProject, setSelectedProject] = useState<SelectedLinearProject | null>(null);
 
   // Load active projects on mount
   useEffect(() => {
     commands.getActiveTimeboxProjects().then(setActiveProjects).catch(console.error);
   }, []);
-
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (projectDropdownRef.current && !projectDropdownRef.current.contains(event.target as Node)) {
-        setIsProjectDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const selectedProject = activeProjects.find(p => p.id === selectedProjectId);
 
   const handlePresetClick = (duration: number) => {
     setSelectedDuration(duration);
@@ -81,8 +71,8 @@ export function TimeboxForm({ onCreated, linearProjectId, linearProjectDetails }
 
     setIsSubmitting(true);
     try {
-      // Use the passed linearProjectId prop if provided, otherwise use the dropdown selection
-      const projectIdToUse = linearProjectId ?? selectedProjectId ?? undefined;
+      // Use the passed linearProjectId prop if provided, otherwise use the dropdown selection's localDbId
+      const projectIdToUse = linearProjectId ?? selectedProject?.localDbId ?? undefined;
       const timebox = await commands.createTimebox({
         intention: intention.trim(),
         intended_duration: selectedDuration,
@@ -90,9 +80,9 @@ export function TimeboxForm({ onCreated, linearProjectId, linearProjectDetails }
         linear_project_id: projectIdToUse,
       });
 
-      // Auto-create Linear issue if project is selected (from dropdown or from ProjectIssuesView context)
-      const projectToCreateIssueFor = selectedProjectId && selectedProject
-        ? { linearProjectId: selectedProject.linear_project_id, linearTeamId: selectedProject.linear_team_id }
+      // Auto-create Linear issue if project is selected (from picker or from ProjectIssuesView context)
+      const projectToCreateIssueFor = selectedProject
+        ? { linearProjectId: selectedProject.linearProjectId, linearTeamId: selectedProject.linearTeamId }
         : linearProjectDetails;
 
       if (projectToCreateIssueFor) {
@@ -125,7 +115,7 @@ export function TimeboxForm({ onCreated, linearProjectId, linearProjectDetails }
       setSelectedDuration(null);
       setCustomDuration('');
       setIsCustom(false);
-      setSelectedProjectId(null);
+      setSelectedProject(null);
       onCreated();
     } catch (error) {
       console.error('Failed to create timebox:', error);
@@ -206,58 +196,16 @@ export function TimeboxForm({ onCreated, linearProjectId, linearProjectDetails }
         />
       </div>
 
-      {/* Linear Project Dropdown - hidden when already in a project context */}
-      {activeProjects.length > 0 && !linearProjectDetails && (
-        <div className="mb-4 relative" ref={projectDropdownRef}>
-          <button
-            type="button"
-            onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+      {/* Linear Project Picker - hidden when already in a project context */}
+      {linearApiKey && !linearProjectDetails && (
+        <div className="mb-4">
+          <LinearProjectPicker
+            apiKey={linearApiKey}
+            savedProjects={activeProjects}
+            selectedProject={selectedProject}
+            onSelect={setSelectedProject}
             disabled={isSubmitting}
-            className="w-full flex items-center justify-between px-4 py-2 bg-neutral-900 border border-neutral-800 text-white rounded-lg hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <span className={selectedProject ? 'text-white' : 'text-neutral-500'}>
-              {selectedProject ? selectedProject.name : 'Select Linear project (optional)'}
-            </span>
-            <svg
-              className={`w-4 h-4 text-neutral-400 transition-transform ${isProjectDropdownOpen ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {isProjectDropdownOpen && (
-            <div className="absolute z-10 w-full mt-1 bg-[#0a0a0a] border border-neutral-800 rounded-lg shadow-lg max-h-60 overflow-auto">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedProjectId(null);
-                  setIsProjectDropdownOpen(false);
-                }}
-                className={`w-full text-left px-4 py-2 hover:bg-neutral-800 transition-colors ${
-                  !selectedProjectId ? 'bg-neutral-800 text-white' : 'text-neutral-400'
-                }`}
-              >
-                No project
-              </button>
-              {activeProjects.map((project) => (
-                <button
-                  key={project.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedProjectId(project.id);
-                    setIsProjectDropdownOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 hover:bg-neutral-800 transition-colors ${
-                    selectedProjectId === project.id ? 'bg-[#5E6AD2] text-white' : 'text-neutral-300'
-                  }`}
-                >
-                  {project.name}
-                </button>
-              ))}
-            </div>
-          )}
+          />
         </div>
       )}
 
