@@ -104,6 +104,15 @@ export interface LinearApiProject {
   state: string | null;
 }
 
+// Search result from Linear API with embedded team info
+export interface LinearSearchProject {
+  id: string;
+  name: string;
+  description: string | null;
+  state: string | null;
+  teams: { nodes: LinearTeam[] };
+}
+
 export interface LinearProject {
   id: number;
   linear_project_id: string;
