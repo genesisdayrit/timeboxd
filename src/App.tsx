@@ -1,64 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
-import { commands } from './lib/commands';
-import type { TimeboxWithSessions } from './lib/types';
+import { AppProvider, useAppContext } from './contexts/AppContext';
 import { useTimers } from './hooks/useTimers';
-import { LeftNav, type Page } from './components/LeftNav';
+import { LeftNav } from './components/LeftNav';
 import { SessionsPage } from './pages/SessionsPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
 import { LinearPage } from './pages/LinearPage';
 import './App.css';
 
-function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('sessions');
-  const [timeboxes, setTimeboxes] = useState<TimeboxWithSessions[]>([]);
-  const [archivedTimeboxes, setArchivedTimeboxes] = useState<TimeboxWithSessions[]>([]);
-  const [activeTimeboxes, setActiveTimeboxes] = useState<TimeboxWithSessions[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isLinearConnected, setIsLinearConnected] = useState(false);
-  const [highlightedIssueId, setHighlightedIssueId] = useState<string | null>(null);
+function AppContent() {
+  const { navigation, timeboxes, integrations, isInitializing } = useAppContext();
+  const { getTimer, formatTime } = useTimers(timeboxes.activeTimeboxes, timeboxes.refreshData);
 
-  const checkLinearConnection = useCallback(async () => {
-    try {
-      const integration = await commands.getIntegrationByType('linear');
-      setIsLinearConnected(!!integration);
-    } catch (error) {
-      console.error('Failed to check Linear connection:', error);
-      setIsLinearConnected(false);
-    }
-  }, []);
-
-  const refreshData = useCallback(async () => {
-    try {
-      const [todayBoxes, active, archived] = await Promise.all([
-        commands.getTodayTimeboxes(),
-        commands.getActiveTimeboxes(),
-        commands.getArchivedTimeboxes(),
-      ]);
-      setTimeboxes(todayBoxes);
-      setActiveTimeboxes(active);
-      setArchivedTimeboxes(archived);
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const { getTimer, formatTime } = useTimers(activeTimeboxes, refreshData);
-
-  const handleNavigateToTimebox = useCallback((issueId: string) => {
-    setHighlightedIssueId(issueId);
-    setCurrentPage('sessions');
-    // Clear highlight after animation
-    setTimeout(() => setHighlightedIssueId(null), 2000);
-  }, []);
-
-  useEffect(() => {
-    refreshData();
-    checkLinearConnection();
-  }, [refreshData, checkLinearConnection]);
-
-  if (loading) {
+  if (isInitializing) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <p className="text-neutral-500">Loading...</p>
@@ -68,23 +20,42 @@ function App() {
 
   return (
     <div className="min-h-screen bg-black flex">
-      <LeftNav currentPage={currentPage} onNavigate={setCurrentPage} isLinearConnected={isLinearConnected} />
+      <LeftNav
+        currentPage={navigation.currentPage}
+        onNavigate={navigation.navigateTo}
+        isLinearConnected={integrations.linear.isConnected}
+      />
       <main className="flex-1 overflow-auto">
-        {currentPage === 'sessions' && (
+        {navigation.currentPage === 'sessions' && (
           <SessionsPage
-            timeboxes={timeboxes}
-            archivedTimeboxes={archivedTimeboxes}
-            activeTimeboxes={activeTimeboxes}
+            timeboxes={timeboxes.timeboxes}
+            archivedTimeboxes={timeboxes.archivedTimeboxes}
+            activeTimeboxes={timeboxes.activeTimeboxes}
             getTimer={getTimer}
             formatTime={formatTime}
-            onUpdate={refreshData}
-            highlightedIssueId={highlightedIssueId}
+            onUpdate={timeboxes.refreshData}
+            highlightedIssueId={navigation.highlightedIssueId}
           />
         )}
-        {currentPage === 'integrations' && <IntegrationsPage onLinearConnectionChange={checkLinearConnection} />}
-        {currentPage === 'linear' && <LinearPage onTimeboxCreated={refreshData} onNavigateToTimebox={handleNavigateToTimebox} />}
+        {navigation.currentPage === 'integrations' && (
+          <IntegrationsPage onLinearConnectionChange={integrations.refreshIntegrations} />
+        )}
+        {navigation.currentPage === 'linear' && (
+          <LinearPage
+            onTimeboxCreated={timeboxes.refreshData}
+            onNavigateToTimebox={navigation.navigateToTimebox}
+          />
+        )}
       </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }
 
