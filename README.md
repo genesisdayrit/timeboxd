@@ -10,6 +10,7 @@ A desktop timebox tracking app built with Tauri, React, and TypeScript.
 - Track sessions with start/stop times
 - View all timeboxes for the current day
 - Dark mode UI
+- Automatic updates via GitHub releases
 
 ## Tech Stack
 
@@ -29,3 +30,7 @@ npm run tauri dev
 ```bash
 npm run tauri build
 ```
+
+## Releasing
+
+See [RELEASING.md](./RELEASING.md) for instructions on creating releases with auto-update support.

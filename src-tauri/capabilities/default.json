@@ -11,6 +11,13 @@
       "allow": [
         { "url": "linear://*" }
       ]
-    }
+    },
+    "updater:default",
+    "updater:allow-check",
+    "updater:allow-download-and-install",
+    "dialog:default",
+    "dialog:allow-ask",
+    "dialog:allow-message",
+    "process:allow-restart"
   ]
 }

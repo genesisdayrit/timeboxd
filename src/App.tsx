@@ -4,6 +4,7 @@ import { LeftNav } from './components/LeftNav';
 import { SessionsPage } from './pages/SessionsPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
 import { LinearPage } from './pages/LinearPage';
+import { UpdateChecker } from './components/UpdateChecker';
 import './App.css';
 
 function AppContent() {
@@ -54,6 +55,7 @@ function AppContent() {
 function App() {
   return (
     <AppProvider>
+      <UpdateChecker />
       <AppContent />
     </AppProvider>
   );
