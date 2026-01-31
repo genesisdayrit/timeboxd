@@ -1,15 +1,24 @@
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import { useTimers } from './hooks/useTimers';
+import { useIdleDetection } from './hooks/useIdleDetection';
 import { LeftNav } from './components/LeftNav';
 import { SessionsPage } from './pages/SessionsPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
 import { LinearPage } from './pages/LinearPage';
 import { UpdateChecker } from './components/UpdateChecker';
+import { IdleReturnBanner } from './components/IdleReturnBanner';
 import './App.css';
 
 function AppContent() {
   const { navigation, timeboxes, integrations, isInitializing } = useAppContext();
   const { getTimer, formatTime } = useTimers(timeboxes.activeTimeboxes, timeboxes.refreshData);
+
+  // Auto-stop timeboxes when system is idle
+  const { autoStoppedInfo, dismissNotification } = useIdleDetection({
+    activeTimeboxes: timeboxes.activeTimeboxes,
+    idleSettings: integrations.idleSettings,
+    onAutoStop: timeboxes.refreshData,
+  });
 
   if (isInitializing) {
     return (
@@ -21,6 +30,10 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-black flex">
+      {/* Show banner when user returns after idle auto-stop */}
+      {autoStoppedInfo && (
+        <IdleReturnBanner info={autoStoppedInfo} onDismiss={dismissNotification} />
+      )}
       <LeftNav
         currentPage={navigation.currentPage}
         onNavigate={navigation.navigateTo}

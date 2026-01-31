@@ -13,7 +13,7 @@ pub fn get_sessions_for_timebox(
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timebox_id, started_at, stopped_at, cancelled_at
+            "SELECT id, timebox_id, started_at, stopped_at, cancelled_at, auto_stopped_at
              FROM sessions
              WHERE timebox_id = ?1
              ORDER BY started_at DESC",
@@ -43,7 +43,7 @@ pub fn stop_session(state: State<'_, AppState>, session_id: i64) -> Result<Sessi
 
     // Return the updated session
     let mut stmt = conn
-        .prepare("SELECT id, timebox_id, started_at, stopped_at, cancelled_at FROM sessions WHERE id = ?1")
+        .prepare("SELECT id, timebox_id, started_at, stopped_at, cancelled_at, auto_stopped_at FROM sessions WHERE id = ?1")
         .map_err(|e| e.to_string())?;
 
     let session = stmt
@@ -67,7 +67,7 @@ pub fn cancel_session(state: State<'_, AppState>, session_id: i64) -> Result<Ses
 
     // Return the updated session
     let mut stmt = conn
-        .prepare("SELECT id, timebox_id, started_at, stopped_at, cancelled_at FROM sessions WHERE id = ?1")
+        .prepare("SELECT id, timebox_id, started_at, stopped_at, cancelled_at, auto_stopped_at FROM sessions WHERE id = ?1")
         .map_err(|e| e.to_string())?;
 
     let session = stmt
@@ -86,7 +86,7 @@ pub fn get_active_session_for_timebox(
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, timebox_id, started_at, stopped_at, cancelled_at
+            "SELECT id, timebox_id, started_at, stopped_at, cancelled_at, auto_stopped_at
              FROM sessions
              WHERE timebox_id = ?1 AND stopped_at IS NULL AND cancelled_at IS NULL
              LIMIT 1",

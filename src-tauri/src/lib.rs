@@ -13,6 +13,7 @@ use commands::{
     get_sessions_for_timebox, get_timebox_change_log, get_today_timeboxes, pause_timebox,
     reorder_timeboxes, start_timebox, stop_session, stop_timebox, stop_timebox_after_time,
     unarchive_timebox, update_timebox, set_timebox_linear_issue, set_timebox_linear_project,
+    auto_stop_timebox,
     // Integration commands
     create_integration, delete_integration, get_integration_by_type, get_integrations,
     test_linear_connection, test_todoist_connection, update_integration_config,
@@ -23,6 +24,8 @@ use commands::{
     create_linear_issue, get_linear_team_states, update_linear_issue_state, get_linear_project_issues,
     // Linear search commands
     search_linear_projects,
+    // Idle detection commands
+    get_system_idle_time, get_idle_settings, set_idle_settings,
 };
 use database::initialize_database;
 use state::AppState;
@@ -34,6 +37,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             let db = initialize_database(app.handle())
                 .expect("Failed to initialize database");
@@ -88,6 +92,11 @@ pub fn run() {
             set_timebox_linear_project,
             // Linear search commands
             search_linear_projects,
+            // Idle detection commands
+            get_system_idle_time,
+            get_idle_settings,
+            set_idle_settings,
+            auto_stop_timebox,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
