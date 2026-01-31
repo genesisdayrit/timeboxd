@@ -1,6 +1,7 @@
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import { useTimers } from './hooks/useTimers';
 import { useIdleDetection } from './hooks/useIdleDetection';
+import { useOvertimeNotification } from './hooks/useOvertimeNotification';
 import { LeftNav } from './components/LeftNav';
 import { SessionsPage } from './pages/SessionsPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
@@ -11,13 +12,19 @@ import './App.css';
 
 function AppContent() {
   const { navigation, timeboxes, integrations, isInitializing } = useAppContext();
-  const { getTimer, formatTime } = useTimers(timeboxes.activeTimeboxes, timeboxes.refreshData);
+  const { timers, getTimer, formatTime } = useTimers(timeboxes.activeTimeboxes, timeboxes.refreshData);
 
   // Auto-stop timeboxes when system is idle
   const { autoStoppedInfo, dismissNotification } = useIdleDetection({
     activeTimeboxes: timeboxes.activeTimeboxes,
     idleSettings: integrations.idleSettings,
     onAutoStop: timeboxes.refreshData,
+  });
+
+  // Send notification when a timebox goes into overtime
+  useOvertimeNotification({
+    timers,
+    activeTimeboxes: timeboxes.activeTimeboxes,
   });
 
   if (isInitializing) {
