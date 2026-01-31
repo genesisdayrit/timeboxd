@@ -184,6 +184,38 @@ pub fn stop_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, Stri
     Ok(timebox)
 }
 
+/// Auto-stop a timebox due to system idle. Same as stop_timebox but also sets auto_stopped_at.
+#[tauri::command]
+pub fn auto_stop_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    // Close any open sessions for this timebox with auto_stopped_at marker
+    conn.execute(
+        "UPDATE sessions SET stopped_at = ?1, auto_stopped_at = ?1 WHERE timebox_id = ?2 AND stopped_at IS NULL AND cancelled_at IS NULL",
+        params![now, id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Update timebox - set completed_at and status to stopped (auto-stopped due to idle)
+    conn.execute(
+        "UPDATE timeboxes SET completed_at = ?1, status = ?2, updated_at = ?1 WHERE id = ?3",
+        params![now, TimeboxStatus::Stopped.as_str(), id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Return the updated timebox
+    let mut stmt = conn
+        .prepare(&format!("SELECT {} FROM timeboxes WHERE id = ?1", TIMEBOX_SELECT_COLUMNS))
+        .map_err(|e| e.to_string())?;
+
+    let timebox = stmt
+        .query_row(params![id], Timebox::from_row)
+        .map_err(|e| e.to_string())?;
+
+    Ok(timebox)
+}
+
 #[tauri::command]
 pub fn finish_timebox(state: State<'_, AppState>, id: i64) -> Result<Timebox, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
@@ -376,7 +408,7 @@ pub fn get_today_timeboxes(state: State<'_, AppState>) -> Result<Vec<TimeboxWith
     for timebox in timeboxes {
         let mut session_stmt = conn
             .prepare(
-                "SELECT id, timebox_id, started_at, stopped_at, cancelled_at
+                "SELECT id, timebox_id, started_at, stopped_at, cancelled_at, auto_stopped_at
                  FROM sessions
                  WHERE timebox_id = ?1
                  ORDER BY started_at DESC",
@@ -439,7 +471,7 @@ pub fn get_active_timeboxes(state: State<'_, AppState>) -> Result<Vec<TimeboxWit
     for timebox in timeboxes {
         let mut session_stmt = conn
             .prepare(
-                "SELECT id, timebox_id, started_at, stopped_at, cancelled_at
+                "SELECT id, timebox_id, started_at, stopped_at, cancelled_at, auto_stopped_at
                  FROM sessions
                  WHERE timebox_id = ?1
                  ORDER BY started_at DESC",
@@ -592,7 +624,7 @@ pub fn get_archived_timeboxes(state: State<'_, AppState>) -> Result<Vec<TimeboxW
     for timebox in timeboxes {
         let mut session_stmt = conn
             .prepare(
-                "SELECT id, timebox_id, started_at, stopped_at, cancelled_at
+                "SELECT id, timebox_id, started_at, stopped_at, cancelled_at, auto_stopped_at
                  FROM sessions
                  WHERE timebox_id = ?1
                  ORDER BY started_at DESC",

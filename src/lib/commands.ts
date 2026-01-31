@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest, Integration, CreateIntegrationRequest, LinearTestResult, TodoistTestResult, LinearTeam, LinearApiProject, LinearSearchProject, LinearProject, SaveLinearProjectRequest, LinearApiIssue, CreateLinearIssueRequest, CreateLinearIssueResult, LinearTeamWorkflowState } from './types';
+import type { Timebox, TimeboxWithSessions, Session, CreateTimeboxRequest, UpdateTimeboxRequest, ReorderTimeboxRequest, Integration, CreateIntegrationRequest, LinearTestResult, TodoistTestResult, LinearTeam, LinearApiProject, LinearSearchProject, LinearProject, SaveLinearProjectRequest, LinearApiIssue, CreateLinearIssueRequest, CreateLinearIssueResult, LinearTeamWorkflowState, IdleSettings } from './types';
 
 export const commands = {
   createTimebox: (request: CreateTimeboxRequest) =>
@@ -122,4 +122,17 @@ export const commands = {
 
   setTimeboxLinearProject: (timeboxId: number, linearProjectId: number | null) =>
     invoke<Timebox>('set_timebox_linear_project', { timeboxId, linearProjectId }),
+
+  // Idle detection commands
+  getSystemIdleTime: () =>
+    invoke<number>('get_system_idle_time'),
+
+  autoStopTimebox: (id: number) =>
+    invoke<Timebox>('auto_stop_timebox', { id }),
+
+  getIdleSettings: () =>
+    invoke<IdleSettings>('get_idle_settings'),
+
+  setIdleSettings: (settings: IdleSettings) =>
+    invoke<void>('set_idle_settings', { settings }),
 };

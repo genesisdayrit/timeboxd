@@ -8,6 +8,7 @@ pub struct Session {
     pub started_at: String,
     pub stopped_at: Option<String>,
     pub cancelled_at: Option<String>,
+    pub auto_stopped_at: Option<String>,
 }
 
 impl Session {
@@ -18,6 +19,7 @@ impl Session {
             started_at: row.get(2)?,
             stopped_at: row.get(3)?,
             cancelled_at: row.get(4)?,
+            auto_stopped_at: row.get(5)?,
         })
     }
 }

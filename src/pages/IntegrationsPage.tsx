@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { commands } from '../lib/commands';
 import { LinearConnectionForm } from '../components/LinearConnectionForm';
 import { TodoistConnectionForm } from '../components/TodoistConnectionForm';
-import { useLinear } from '../contexts/AppContext';
+import { useLinear, useIdleSettings } from '../contexts/AppContext';
 import type { Integration } from '../lib/types';
 
 type View = 'list' | 'connect-linear' | 'connect-todoist' | 'success';
@@ -18,6 +18,31 @@ export function IntegrationsPage({ onLinearConnectionChange }: IntegrationsPageP
 
   // Use context for Linear settings - no page reload needed!
   const { openInNativeApp: linearOpenInNativeApp, updateOpenInNativeApp } = useLinear();
+
+  // Use context for idle settings
+  const { enabled: idleEnabled, timeout_minutes: idleTimeoutMinutes, updateIdleSettings } = useIdleSettings();
+
+  const handleToggleIdleEnabled = async () => {
+    try {
+      await updateIdleSettings({
+        enabled: !idleEnabled,
+        timeout_minutes: idleTimeoutMinutes,
+      });
+    } catch (error) {
+      console.error('Failed to update idle setting:', error);
+    }
+  };
+
+  const handleIdleTimeoutChange = async (minutes: number) => {
+    try {
+      await updateIdleSettings({
+        enabled: idleEnabled,
+        timeout_minutes: minutes,
+      });
+    } catch (error) {
+      console.error('Failed to update idle timeout:', error);
+    }
+  };
 
   const loadIntegrations = async () => {
     try {
@@ -201,6 +226,50 @@ export function IntegrationsPage({ onLinearConnectionChange }: IntegrationsPageP
           </div>
         </div>
       )}
+
+      {/* Auto-Stop Settings */}
+      <div className="mb-8">
+        <h3 className="text-lg font-medium text-neutral-300 mb-4">Auto-Stop Settings</h3>
+        <div className="bg-[#0a0a0a] rounded-lg p-4 border border-neutral-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-neutral-300">Stop on idle</p>
+              <p className="text-xs text-neutral-500">Automatically stop active timeboxes when you're away</p>
+            </div>
+            <button
+              onClick={handleToggleIdleEnabled}
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                idleEnabled ? 'bg-green-600' : 'bg-neutral-700'
+              }`}
+            >
+              <span
+                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                  idleEnabled ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          {idleEnabled && (
+            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-neutral-800">
+              <label className="text-sm text-neutral-400">Stop after</label>
+              <select
+                value={idleTimeoutMinutes}
+                onChange={(e) => handleIdleTimeoutChange(Number(e.target.value))}
+                className="bg-neutral-900 border border-neutral-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:border-neutral-600"
+              >
+                <option value={1}>1 minute</option>
+                <option value={2}>2 minutes</option>
+                <option value={5}>5 minutes</option>
+                <option value={10}>10 minutes</option>
+                <option value={15}>15 minutes</option>
+                <option value={30}>30 minutes</option>
+              </select>
+              <span className="text-sm text-neutral-400">of inactivity</span>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Available integrations */}
       <div>

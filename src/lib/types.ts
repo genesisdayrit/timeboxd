@@ -33,6 +33,7 @@ export interface Session {
   started_at: string;
   stopped_at: string | null;
   cancelled_at: string | null;
+  auto_stopped_at: string | null;
 }
 
 export interface TimeboxWithSessions extends Timebox {
@@ -205,4 +206,10 @@ export interface LinearApiIssue {
   state: LinearWorkflowState | null;
   assignee: LinearUser | null;
   labels: { nodes: LinearLabel[] } | null;
+}
+
+// Idle detection settings
+export interface IdleSettings {
+  enabled: boolean;
+  timeout_minutes: number;
 }

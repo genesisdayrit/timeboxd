@@ -190,5 +190,26 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
         conn.execute("PRAGMA user_version = 9", [])?;
     }
 
+    // Migration 10: Add settings table for app preferences and auto_stopped_at to sessions
+    if version < 10 {
+        conn.execute_batch(r#"
+            -- Settings table for app preferences (key-value store)
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            );
+
+            -- Default idle settings
+            INSERT INTO settings (key, value) VALUES ('auto_stop_enabled', 'true');
+            INSERT INTO settings (key, value) VALUES ('idle_timeout_minutes', '5');
+
+            -- Add auto_stopped_at to sessions to track idle auto-stops
+            ALTER TABLE sessions ADD COLUMN auto_stopped_at TEXT;
+
+            PRAGMA user_version = 10;
+        "#)?;
+    }
+
     Ok(())
 }

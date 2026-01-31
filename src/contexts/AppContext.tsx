@@ -1,6 +1,6 @@
 import { createContext, useContext, useCallback, useState, useEffect, useMemo, type ReactNode } from 'react';
 import { commands } from '../lib/commands';
-import type { TimeboxWithSessions, Integration, LinearConfig, IntegrationType } from '../lib/types';
+import type { TimeboxWithSessions, Integration, LinearConfig, IntegrationType, IdleSettings } from '../lib/types';
 import type { Page } from '../components/LeftNav';
 
 // ============================================
@@ -24,12 +24,14 @@ interface IntegrationsState {
   todoist: TodoistSettings;
   integrations: Integration[];
   loading: boolean;
+  idleSettings: IdleSettings;
 }
 
 interface IntegrationsActions {
   refreshIntegrations: () => Promise<void>;
   updateLinearOpenInNativeApp: (value: boolean) => Promise<void>;
   checkConnection: (type: IntegrationType) => Promise<boolean>;
+  updateIdleSettings: (settings: IdleSettings) => Promise<void>;
 }
 
 // Navigation subsection types
@@ -78,6 +80,11 @@ const defaultTodoistSettings: TodoistSettings = {
   apiToken: null,
 };
 
+const defaultIdleSettings: IdleSettings = {
+  enabled: true,
+  timeout_minutes: 5,
+};
+
 // ============================================
 // CONTEXT CREATION
 // ============================================
@@ -101,6 +108,7 @@ export function AppProvider({ children }: AppProviderProps) {
   const [integrationsLoading, setIntegrationsLoading] = useState(true);
   const [linearSettings, setLinearSettings] = useState<LinearSettings>(defaultLinearSettings);
   const [todoistSettings, setTodoistSettings] = useState<TodoistSettings>(defaultTodoistSettings);
+  const [idleSettings, setIdleSettings] = useState<IdleSettings>(defaultIdleSettings);
 
   // ========================================
   // NAVIGATION STATE
@@ -149,6 +157,15 @@ export function AppProvider({ children }: AppProviderProps) {
       } else {
         setTodoistSettings(defaultTodoistSettings);
       }
+
+      // Load idle settings
+      try {
+        const idleSettingsData = await commands.getIdleSettings();
+        setIdleSettings(idleSettingsData);
+      } catch (error) {
+        console.error('Failed to load idle settings:', error);
+        setIdleSettings(defaultIdleSettings);
+      }
     } catch (error) {
       console.error('Failed to load integrations:', error);
     } finally {
@@ -184,6 +201,16 @@ export function AppProvider({ children }: AppProviderProps) {
       return !!integration;
     } catch {
       return false;
+    }
+  }, []);
+
+  const updateIdleSettings = useCallback(async (settings: IdleSettings) => {
+    try {
+      await commands.setIdleSettings(settings);
+      setIdleSettings(settings);
+    } catch (error) {
+      console.error('Failed to update idle settings:', error);
+      throw error;
     }
   }, []);
 
@@ -263,9 +290,11 @@ export function AppProvider({ children }: AppProviderProps) {
       todoist: todoistSettings,
       integrations,
       loading: integrationsLoading,
+      idleSettings,
       refreshIntegrations,
       updateLinearOpenInNativeApp,
       checkConnection,
+      updateIdleSettings,
     },
     navigation: {
       currentPage,
@@ -289,9 +318,11 @@ export function AppProvider({ children }: AppProviderProps) {
     todoistSettings,
     integrations,
     integrationsLoading,
+    idleSettings,
     refreshIntegrations,
     updateLinearOpenInNativeApp,
     checkConnection,
+    updateIdleSettings,
     currentPage,
     highlightedIssueId,
     navigateTo,
@@ -365,4 +396,15 @@ export function useNavigation() {
 export function useTimeboxes() {
   const { timeboxes } = useAppContext();
   return timeboxes;
+}
+
+/**
+ * Convenience hook for idle settings
+ */
+export function useIdleSettings() {
+  const { integrations } = useAppContext();
+  return {
+    ...integrations.idleSettings,
+    updateIdleSettings: integrations.updateIdleSettings,
+  };
 }
