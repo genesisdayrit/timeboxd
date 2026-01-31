@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "setup": "ln -sf /Users/Genesis/repos/timeboxd/.env .env",
     "run": "npm install && npx tauri dev",
     "build": "npm install && npx tauri build"
   },
