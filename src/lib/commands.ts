@@ -101,6 +101,9 @@ export const commands = {
     invoke<void>('delete_linear_project', { linearProjectId }),
 
   // Linear search commands
+  searchLinearTeams: (apiKey: string, searchTerm: string) =>
+    invoke<LinearTeam[]>('search_linear_teams', { apiKey, searchTerm }),
+
   searchLinearProjects: (apiKey: string, searchTerm: string) =>
     invoke<LinearSearchProject[]>('search_linear_projects', { apiKey, searchTerm }),
 

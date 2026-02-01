@@ -647,6 +647,68 @@ pub fn get_linear_project_issues(
 }
 
 // ============================================
+// Linear Team Search API Commands
+// ============================================
+
+// GraphQL Response types for team search
+#[derive(Debug, Deserialize)]
+struct LinearSearchTeamsResponse {
+    data: Option<LinearSearchTeamsData>,
+    errors: Option<Vec<LinearError>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LinearSearchTeamsData {
+    teams: LinearTeamsNodes,
+}
+
+// Command: Search teams by name
+#[tauri::command]
+pub fn search_linear_teams(
+    api_key: String,
+    search_term: String,
+) -> Result<Vec<LinearTeam>, String> {
+    let client = reqwest::blocking::Client::new();
+
+    // Escape special characters for GraphQL
+    let search_escaped = search_term
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"");
+
+    // Search teams with name filter (case insensitive contains)
+    let query = format!(
+        r#"{{ "query": "{{ teams(first: 50, filter: {{ name: {{ containsIgnoreCase: \"{}\" }} }}) {{ nodes {{ id name }} }} }}" }}"#,
+        search_escaped
+    );
+
+    let response = client
+        .post("https://api.linear.app/graphql")
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .body(query)
+        .send()
+        .map_err(|e| format!("Failed to connect to Linear: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("Linear API returned status: {}", response.status()));
+    }
+
+    let result: LinearSearchTeamsResponse = response
+        .json()
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    if let Some(errors) = result.errors {
+        return Err(errors
+            .into_iter()
+            .map(|e| e.message)
+            .collect::<Vec<_>>()
+            .join(", "));
+    }
+
+    Ok(result.data.map(|d| d.teams.nodes).unwrap_or_default())
+}
+
+// ============================================
 // Linear Project Search API Commands
 // ============================================
 
