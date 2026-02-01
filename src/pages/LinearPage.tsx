@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { commands } from '../lib/commands';
 import type { LinearTeam, LinearApiProject, LinearProject, LinearConfig } from '../lib/types';
 import { ProjectIssuesView } from '../components/ProjectIssuesView';
@@ -26,6 +26,7 @@ export function LinearPage({ onTimeboxCreated, onNavigateToTimebox }: LinearPage
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<SelectedProject | null>(null);
+  const [projectSearchTerm, setProjectSearchTerm] = useState('');
 
   // Load API key from integration
   const loadApiKey = useCallback(async () => {
@@ -83,6 +84,9 @@ export function LinearPage({ onTimeboxCreated, onNavigateToTimebox }: LinearPage
   useEffect(() => {
     if (!selectedTeamId || !apiKey) return;
 
+    // Clear search when team changes
+    setProjectSearchTerm('');
+
     const loadProjects = async () => {
       setLoadingProjects(true);
       try {
@@ -97,6 +101,19 @@ export function LinearPage({ onTimeboxCreated, onNavigateToTimebox }: LinearPage
     };
     loadProjects();
   }, [selectedTeamId, apiKey]);
+
+  // Filter projects based on search term
+  const filteredProjects = useMemo(() => {
+    if (!projectSearchTerm.trim()) {
+      return apiProjects;
+    }
+    const term = projectSearchTerm.toLowerCase().trim();
+    return apiProjects.filter(
+      (project) =>
+        project.name.toLowerCase().includes(term) ||
+        (project.description && project.description.toLowerCase().includes(term))
+    );
+  }, [apiProjects, projectSearchTerm]);
 
   const handleSaveProject = async (project: LinearApiProject) => {
     if (!selectedTeamId) return;
@@ -233,69 +250,118 @@ export function LinearPage({ onTimeboxCreated, onNavigateToTimebox }: LinearPage
           ) : apiProjects.length === 0 ? (
             <p className="text-neutral-500">No projects found for this team.</p>
           ) : (
-            <div className="space-y-3">
-              {apiProjects.map((project) => {
-                const saved = getSavedProject(project.id);
-                const isSaved = !!saved;
-                const isActive = saved?.is_active_timebox_project ?? false;
-
-                return (
-                  <div
-                    key={project.id}
-                    onClick={() =>
-                      setSelectedProject({
-                        projectId: project.id,
-                        projectName: project.name,
-                        localProjectId: saved?.id,
-                        teamId: selectedTeamId!,
-                      })
-                    }
-                    className="flex items-center justify-between bg-[#0a0a0a] rounded-lg p-4 border border-neutral-800 cursor-pointer hover:border-neutral-700 transition-colors"
+            <>
+              {/* Search Input */}
+              <div className="relative mb-4">
+                <svg
+                  className="absolute left-3 top-2.5 w-4 h-4 text-neutral-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  value={projectSearchTerm}
+                  onChange={(e) => setProjectSearchTerm(e.target.value)}
+                  placeholder="Search projects..."
+                  className="w-full pl-9 pr-8 py-2 bg-[#0a0a0a] border border-neutral-800 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E6AD2] focus:border-transparent"
+                />
+                {projectSearchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setProjectSearchTerm('')}
+                    className="absolute right-2 top-2 p-0.5 text-neutral-500 hover:text-neutral-300 transition-colors"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-white">{project.name}</p>
-                        {project.state && (
-                          <span className="px-2 py-0.5 text-xs bg-neutral-800 text-neutral-400 rounded">
-                            {project.state}
-                          </span>
-                        )}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Filtered Projects List */}
+              {filteredProjects.length === 0 ? (
+                <p className="text-neutral-500">No projects match your search.</p>
+              ) : (
+                <div className="space-y-3">
+                  {filteredProjects.map((project) => {
+                    const saved = getSavedProject(project.id);
+                    const isSaved = !!saved;
+                    const isActive = saved?.is_active_timebox_project ?? false;
+
+                    return (
+                      <div
+                        key={project.id}
+                        onClick={() =>
+                          setSelectedProject({
+                            projectId: project.id,
+                            projectName: project.name,
+                            localProjectId: saved?.id,
+                            teamId: selectedTeamId!,
+                          })
+                        }
+                        className="flex items-center justify-between bg-[#0a0a0a] rounded-lg p-4 border border-neutral-800 cursor-pointer hover:border-neutral-700 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-white">{project.name}</p>
+                            {project.state && (
+                              <span className="px-2 py-0.5 text-xs bg-neutral-800 text-neutral-400 rounded">
+                                {project.state}
+                              </span>
+                            )}
+                          </div>
+                          {project.description && (
+                            <p className="text-sm text-neutral-500 mt-1 truncate">
+                              {project.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          {!isSaved ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSaveProject(project);
+                              }}
+                              className="px-3 py-1.5 text-sm bg-neutral-800 text-white rounded hover:bg-neutral-700 transition-colors"
+                            >
+                              Save
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleActive(saved);
+                              }}
+                              className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                                isActive
+                                  ? 'bg-[#5E6AD2] text-white hover:bg-[#4f5ab8]'
+                                  : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                              }`}
+                            >
+                              {isActive ? 'Active' : 'Activate'}
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      {project.description && (
-                        <p className="text-sm text-neutral-500 mt-1 truncate">{project.description}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 ml-4">
-                      {!isSaved ? (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSaveProject(project);
-                          }}
-                          className="px-3 py-1.5 text-sm bg-neutral-800 text-white rounded hover:bg-neutral-700 transition-colors"
-                        >
-                          Save
-                        </button>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggleActive(saved);
-                          }}
-                          className={`px-3 py-1.5 text-sm rounded transition-colors ${
-                            isActive
-                              ? 'bg-[#5E6AD2] text-white hover:bg-[#4f5ab8]'
-                              : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-                          }`}
-                        >
-                          {isActive ? 'Active' : 'Activate'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
