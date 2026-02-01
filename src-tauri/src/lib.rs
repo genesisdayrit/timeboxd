@@ -23,7 +23,7 @@ use commands::{
     // Linear issue commands
     create_linear_issue, get_linear_team_states, update_linear_issue_state, get_linear_project_issues,
     // Linear search commands
-    search_linear_projects,
+    search_linear_teams, search_linear_projects,
     // Idle detection commands
     get_system_idle_time, get_idle_settings, set_idle_settings,
 };
@@ -91,6 +91,7 @@ pub fn run() {
             set_timebox_linear_issue,
             set_timebox_linear_project,
             // Linear search commands
+            search_linear_teams,
             search_linear_projects,
             // Idle detection commands
             get_system_idle_time,

@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { commands } from '../lib/commands';
 import type { LinearTeam, LinearApiProject, LinearProject, LinearConfig } from '../lib/types';
 import { ProjectIssuesView } from '../components/ProjectIssuesView';
+import { LinearTeamPicker } from '../components/LinearTeamPicker';
 
 interface SelectedProject {
   projectId: string;
@@ -24,20 +25,7 @@ export function LinearPage({ onTimeboxCreated, onNavigateToTimebox }: LinearPage
   const [loading, setLoading] = useState(true);
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const [selectedProject, setSelectedProject] = useState<SelectedProject | null>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // Load API key from integration
   const loadApiKey = useCallback(async () => {
@@ -226,58 +214,14 @@ export function LinearPage({ onTimeboxCreated, onNavigateToTimebox }: LinearPage
       {/* Team Selector */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-neutral-300 mb-2">Select Team</label>
-        <div className="relative max-w-md" ref={dropdownRef}>
-          <button
-            type="button"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="w-full px-4 py-2 bg-[#0a0a0a] border border-neutral-800 rounded-lg text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-[#5E6AD2] focus:border-transparent"
-          >
-            <span className={selectedTeamId ? 'text-white' : 'text-neutral-500'}>
-              {selectedTeamId
-                ? teams.find((t) => t.id === selectedTeamId)?.name ?? 'Choose a team...'
-                : 'Choose a team...'}
-            </span>
-            <svg
-              className={`w-4 h-4 text-neutral-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {isDropdownOpen && (
-            <div className="absolute z-10 w-full mt-1 bg-[#0a0a0a] border border-neutral-800 rounded-lg shadow-lg max-h-60 overflow-auto">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedTeamId(null);
-                  setIsDropdownOpen(false);
-                }}
-                className="w-full px-4 py-2 text-left text-neutral-500 hover:bg-neutral-800 hover:text-white transition-colors"
-              >
-                Choose a team...
-              </button>
-              {teams.map((team) => (
-                <button
-                  key={team.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedTeamId(team.id);
-                    setIsDropdownOpen(false);
-                  }}
-                  className={`w-full px-4 py-2 text-left transition-colors ${
-                    selectedTeamId === team.id
-                      ? 'bg-[#5E6AD2] text-white'
-                      : 'text-white hover:bg-neutral-800'
-                  }`}
-                >
-                  {team.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {apiKey && (
+          <LinearTeamPicker
+            apiKey={apiKey}
+            teams={teams}
+            selectedTeamId={selectedTeamId}
+            onSelect={setSelectedTeamId}
+          />
+        )}
       </div>
 
       {/* Projects List */}
