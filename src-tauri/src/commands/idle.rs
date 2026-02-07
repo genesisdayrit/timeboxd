@@ -1,7 +1,4 @@
 #[cfg(target_os = "macos")]
-use core_graphics::event::CGEventType;
-
-#[cfg(target_os = "macos")]
 #[link(name = "CoreGraphics", kind = "framework")]
 extern "C" {
     fn CGEventSourceSecondsSinceLastEventType(
@@ -17,10 +14,10 @@ pub fn get_system_idle_time() -> Result<u64, String> {
     #[cfg(target_os = "macos")]
     {
         // kCGEventSourceStateHIDSystemState = 1
-        // kCGAnyInputEventType = 0xffffffff (we use CGEventType::Null which is 0)
-        // Using CGEventType::Null (0) detects any input event
+        // kCGAnyInputEventType = 0xFFFFFFFF - detects ANY input event (keyboard, mouse, trackpad)
+        const K_CG_ANY_INPUT_EVENT_TYPE: u32 = 0xFFFFFFFF;
         let idle_seconds = unsafe {
-            CGEventSourceSecondsSinceLastEventType(1, CGEventType::Null as u32)
+            CGEventSourceSecondsSinceLastEventType(1, K_CG_ANY_INPUT_EVENT_TYPE)
         };
         Ok(idle_seconds as u64)
     }
