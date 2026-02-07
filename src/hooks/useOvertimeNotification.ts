@@ -48,8 +48,8 @@ export function useOvertimeNotification({
           : intention;
 
         await sendNotification({
-          title: 'Estimated Session Time has Ended',
-          body: `"${truncatedIntention}" is now ${overtimeStr} over time.`,
+          title: `Timebox Over: ${truncatedIntention}`,
+          body: `Estimated session time has ended. Now ${overtimeStr} over.`,
         });
       }
 
