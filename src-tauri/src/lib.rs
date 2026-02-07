@@ -26,6 +26,8 @@ use commands::{
     search_linear_teams, search_linear_projects,
     // Idle detection commands
     get_system_idle_time, get_idle_settings, set_idle_settings,
+    // Sound commands
+    play_system_sound,
 };
 use database::initialize_database;
 use state::AppState;
@@ -98,6 +100,8 @@ pub fn run() {
             get_idle_settings,
             set_idle_settings,
             auto_stop_timebox,
+            // Sound commands
+            play_system_sound,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

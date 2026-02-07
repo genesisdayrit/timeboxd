@@ -138,4 +138,8 @@ export const commands = {
 
   setIdleSettings: (settings: IdleSettings) =>
     invoke<void>('set_idle_settings', { settings }),
+
+  // Sound commands
+  playSystemSound: (soundName?: string) =>
+    invoke<void>('play_system_sound', { soundName }),
 };
