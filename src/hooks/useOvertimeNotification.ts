@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { sendNotification, isPermissionGranted, requestPermission } from '@tauri-apps/plugin-notification';
 import type { TimeboxWithSessions } from '../lib/types';
+import { playBeep } from '../lib/beep';
 
 interface TimerState {
   timeboxId: number;
@@ -51,6 +52,9 @@ export function useOvertimeNotification({
           body: `"${truncatedIntention}" is now ${overtimeStr} over time.`,
         });
       }
+
+      // Play beep sound regardless of notification permission
+      await playBeep();
     } catch (error) {
       console.error('Failed to send overtime notification:', error);
     }
