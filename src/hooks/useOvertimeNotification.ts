@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { sendNotification, isPermissionGranted, requestPermission } from '@tauri-apps/plugin-notification';
 import type { TimeboxWithSessions } from '../lib/types';
-import { playBeep } from '../lib/beep';
+import { commands } from '../lib/commands';
 
 interface TimerState {
   timeboxId: number;
@@ -53,8 +53,8 @@ export function useOvertimeNotification({
         });
       }
 
-      // Play beep sound regardless of notification permission
-      await playBeep();
+      // Play system sound (works even when app is in background)
+      await commands.playSystemSound('Glass');
     } catch (error) {
       console.error('Failed to send overtime notification:', error);
     }
