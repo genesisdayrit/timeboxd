@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { LinearProject, LinearSearchProject, SelectedLinearProject } from '../lib/types';
 import { useProjectSearch } from '../hooks/useProjectSearch';
 
@@ -10,6 +10,11 @@ interface LinearProjectPickerProps {
   disabled?: boolean;
 }
 
+type ProjectPickerItem =
+  | { type: 'clear' }
+  | { type: 'saved'; project: LinearProject }
+  | { type: 'search'; project: LinearSearchProject };
+
 export function LinearProjectPicker({
   apiKey,
   savedProjects,
@@ -18,8 +23,11 @@ export function LinearProjectPicker({
   disabled = false,
 }: LinearProjectPickerProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
   const {
     searchTerm,
@@ -65,7 +73,44 @@ export function LinearProjectPicker({
     return grouped;
   }, [results]);
 
-  const handleSavedProjectSelect = (project: LinearProject) => {
+  const isShowingSearchResults = searchTerm.length >= 2;
+
+  // Build flat list of selectable items for keyboard navigation
+  const items: ProjectPickerItem[] = useMemo(() => {
+    if (isShowingSearchResults) {
+      if (isSearching || error || results.length === 0) {
+        return [];
+      }
+      const list: ProjectPickerItem[] = [];
+      for (const [, { projects }] of groupedResults.entries()) {
+        for (const project of projects) {
+          list.push({ type: 'search', project });
+        }
+      }
+      return list;
+    } else {
+      const list: ProjectPickerItem[] = [{ type: 'clear' }];
+      savedProjects.forEach(project => {
+        list.push({ type: 'saved', project });
+      });
+      return list;
+    }
+  }, [isShowingSearchResults, isSearching, error, results, groupedResults, savedProjects]);
+
+  // Reset highlighted index when items change
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [items]);
+
+  // Scroll highlighted item into view
+  useEffect(() => {
+    const itemEl = itemRefs.current.get(highlightedIndex);
+    if (itemEl && listRef.current) {
+      itemEl.scrollIntoView({ block: 'nearest' });
+    }
+  }, [highlightedIndex]);
+
+  const handleSavedProjectSelect = useCallback((project: LinearProject) => {
     onSelect({
       linearProjectId: project.linear_project_id,
       linearTeamId: project.linear_team_id,
@@ -74,9 +119,9 @@ export function LinearProjectPicker({
     });
     setIsDropdownOpen(false);
     clearSearch();
-  };
+  }, [onSelect, clearSearch]);
 
-  const handleSearchResultSelect = (project: LinearSearchProject) => {
+  const handleSearchResultSelect = useCallback((project: LinearSearchProject) => {
     const team = project.teams.nodes[0];
     if (!team) return;
 
@@ -90,18 +135,61 @@ export function LinearProjectPicker({
     });
     setIsDropdownOpen(false);
     clearSearch();
-  };
+  }, [onSelect, savedProjects, clearSearch]);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     onSelect(null);
     setIsDropdownOpen(false);
     clearSearch();
-  };
+  }, [onSelect, clearSearch]);
 
-  const isShowingSearchResults = searchTerm.length >= 2;
+  const handleSelectHighlighted = useCallback(() => {
+    const item = items[highlightedIndex];
+    if (!item) return;
+
+    switch (item.type) {
+      case 'clear':
+        handleClear();
+        break;
+      case 'saved':
+        handleSavedProjectSelect(item.project);
+        break;
+      case 'search':
+        handleSearchResultSelect(item.project);
+        break;
+    }
+  }, [items, highlightedIndex, handleClear, handleSavedProjectSelect, handleSearchResultSelect]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!isDropdownOpen) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev =>
+          prev < items.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev =>
+          prev > 0 ? prev - 1 : prev
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        handleSelectHighlighted();
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setIsDropdownOpen(false);
+        clearSearch();
+        break;
+    }
+  }, [isDropdownOpen, items.length, handleSelectHighlighted, clearSearch]);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef} onKeyDown={handleKeyDown}>
       <button
         type="button"
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -157,7 +245,7 @@ export function LinearProjectPicker({
           </div>
 
           {/* Scrollable results area */}
-          <div className="overflow-auto flex-1">
+          <div className="overflow-auto flex-1" ref={listRef}>
             {isShowingSearchResults ? (
               // Search Results View
               <>
@@ -174,33 +262,48 @@ export function LinearProjectPicker({
                 ) : results.length === 0 ? (
                   <div className="px-4 py-3 text-neutral-500 text-sm">No projects found</div>
                 ) : (
-                  Array.from(groupedResults.entries()).map(([teamId, { teamName, projects }]) => (
-                    <div key={teamId}>
-                      <div className="px-4 py-1.5 text-xs text-neutral-500 uppercase tracking-wide bg-neutral-900/50 sticky top-0">
-                        {teamName}
+                  (() => {
+                    let flatIndex = 0;
+                    return Array.from(groupedResults.entries()).map(([teamId, { teamName, projects }]) => (
+                      <div key={teamId}>
+                        <div className="px-4 py-1.5 text-xs text-neutral-500 uppercase tracking-wide bg-neutral-900/50 sticky top-0">
+                          {teamName}
+                        </div>
+                        {projects.map(project => {
+                          const itemIndex = flatIndex++;
+                          return (
+                            <button
+                              key={project.id}
+                              ref={(el) => {
+                                if (el) itemRefs.current.set(itemIndex, el);
+                                else itemRefs.current.delete(itemIndex);
+                              }}
+                              type="button"
+                              onClick={() => handleSearchResultSelect(project)}
+                              onMouseEnter={() => setHighlightedIndex(itemIndex)}
+                              className={`w-full text-left px-4 py-2 transition-colors ${
+                                highlightedIndex === itemIndex
+                                  ? 'bg-[#5E6AD2] text-white'
+                                  : 'text-white hover:bg-neutral-800'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-white">{project.name}</span>
+                                {project.state && (
+                                  <span className="px-2 py-0.5 text-xs bg-neutral-800 text-neutral-400 rounded">
+                                    {project.state}
+                                  </span>
+                                )}
+                              </div>
+                              {project.description && (
+                                <p className="text-xs text-neutral-500 mt-0.5 truncate">{project.description}</p>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
-                      {projects.map(project => (
-                        <button
-                          key={project.id}
-                          type="button"
-                          onClick={() => handleSearchResultSelect(project)}
-                          className="w-full text-left px-4 py-2 hover:bg-neutral-800 transition-colors"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-white">{project.name}</span>
-                            {project.state && (
-                              <span className="px-2 py-0.5 text-xs bg-neutral-800 text-neutral-400 rounded">
-                                {project.state}
-                              </span>
-                            )}
-                          </div>
-                          {project.description && (
-                            <p className="text-xs text-neutral-500 mt-0.5 truncate">{project.description}</p>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  ))
+                    ));
+                  })()
                 )}
               </>
             ) : (
@@ -208,10 +311,17 @@ export function LinearProjectPicker({
               <>
                 {/* No project option */}
                 <button
+                  ref={(el) => {
+                    if (el) itemRefs.current.set(0, el);
+                    else itemRefs.current.delete(0);
+                  }}
                   type="button"
                   onClick={handleClear}
-                  className={`w-full text-left px-4 py-2 hover:bg-neutral-800 transition-colors ${
-                    !selectedProject ? 'bg-neutral-800 text-white' : 'text-neutral-400'
+                  onMouseEnter={() => setHighlightedIndex(0)}
+                  className={`w-full text-left px-4 py-2 transition-colors ${
+                    highlightedIndex === 0
+                      ? 'bg-[#5E6AD2] text-white'
+                      : !selectedProject ? 'bg-neutral-800 text-white' : 'text-neutral-400'
                   }`}
                 >
                   No project
@@ -223,20 +333,30 @@ export function LinearProjectPicker({
                     <div className="px-4 py-1 text-xs text-neutral-500 uppercase tracking-wide border-t border-neutral-800 mt-1 pt-2">
                       Quick Access
                     </div>
-                    {savedProjects.map((project) => (
-                      <button
-                        key={project.id}
-                        type="button"
-                        onClick={() => handleSavedProjectSelect(project)}
-                        className={`w-full text-left px-4 py-2 hover:bg-neutral-800 transition-colors ${
-                          selectedProject?.linearProjectId === project.linear_project_id
-                            ? 'bg-[#5E6AD2] text-white'
-                            : 'text-neutral-300'
-                        }`}
-                      >
-                        {project.name}
-                      </button>
-                    ))}
+                    {savedProjects.map((project, index) => {
+                      const itemIndex = index + 1;
+                      return (
+                        <button
+                          key={project.id}
+                          ref={(el) => {
+                            if (el) itemRefs.current.set(itemIndex, el);
+                            else itemRefs.current.delete(itemIndex);
+                          }}
+                          type="button"
+                          onClick={() => handleSavedProjectSelect(project)}
+                          onMouseEnter={() => setHighlightedIndex(itemIndex)}
+                          className={`w-full text-left px-4 py-2 transition-colors ${
+                            highlightedIndex === itemIndex
+                              ? 'bg-[#5E6AD2] text-white'
+                              : selectedProject?.linearProjectId === project.linear_project_id
+                              ? 'bg-[#5E6AD2] text-white'
+                              : 'text-neutral-300 hover:bg-neutral-800'
+                          }`}
+                        >
+                          {project.name}
+                        </button>
+                      );
+                    })}
                   </>
                 )}
 
