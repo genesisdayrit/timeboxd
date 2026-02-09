@@ -389,7 +389,7 @@ pub fn get_today_timeboxes(state: State<'_, AppState>) -> Result<Vec<TimeboxWith
         .prepare(&format!(
             "SELECT {}
              FROM timeboxes
-             WHERE date(created_at) = date('now', 'localtime')
+             WHERE created_at >= datetime('now', 'localtime', '-24 hours')
                AND deleted_at IS NULL
                AND archived_at IS NULL
              ORDER BY COALESCE(display_order, 999999), created_at DESC",
@@ -605,7 +605,7 @@ pub fn get_archived_timeboxes(state: State<'_, AppState>) -> Result<Vec<TimeboxW
         .prepare(&format!(
             "SELECT {}
              FROM timeboxes
-             WHERE date(created_at) = date('now', 'localtime')
+             WHERE created_at >= datetime('now', 'localtime', '-24 hours')
                AND deleted_at IS NULL
                AND archived_at IS NOT NULL
              ORDER BY archived_at DESC",
